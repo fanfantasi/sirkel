@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "810024297207",
+    "project_id": "screenshare-77b65",
+    "storage_bucket": "screenshare-77b65.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:810024297207:android:913a1729ca36abc12569f2",
+        "android_client_info": {
+          "package_name": "com.staging.screenshare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBP-hrg7AfP8BUAvlvUlFwX05zq0I-LtJY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

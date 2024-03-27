@@ -1,0 +1,115 @@
+{
+  "projectName": "detectable_text_field",
+  "projectOwner": "santa112358",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "none",
+  "contributors": [
+    {
+      "login": "santa112358",
+      "name": "Santa Takahashi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/43510799?v=4",
+      "profile": "https://github.com/santa112358",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Pareshoct7",
+      "name": "Paresh Patil",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10085177?v=4",
+      "profile": "https://www.facebook.com/Paresh.07.OCT",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jtmuller5",
+      "name": "Joseph Muller",
+      "avatar_url": "https://avatars.githubusercontent.com/u/47997351?v=4",
+      "profile": "https://github.com/jtmuller5",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "EsteveAguilera",
+      "name": "Esteve Aguilera",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6932449?v=4",
+      "profile": "https://github.com/EsteveAguilera",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "MATTYGILO",
+      "name": "MATTYGILO",
+      "avatar_url": "https://avatars.githubusercontent.com/u/34808802?v=4",
+      "profile": "https://github.com/MATTYGILO",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Add00w",
+      "name": "Abdullahi A. Addow",
+      "avatar_url": "https://avatars.githubusercontent.com/u/35359329?v=4",
+      "profile": "https://add00w.github.io",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "rlee1990",
+      "name": "Social Jawn",
+      "avatar_url": "https://avatars.githubusercontent.com/u/21372502?v=4",
+      "profile": "https://github.com/rlee1990",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "xuxiaowei13",
+      "name": "xuxiaowei13",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10124443?v=4",
+      "profile": "https://github.com/xuxiaowei13",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "debuggerx01",
+      "name": "debuggerx01",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19624835?v=4",
+      "profile": "https://www.debuggerx.com",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "furukaze-akane",
+      "name": "furukaze-akane",
+      "avatar_url": "https://avatars.githubusercontent.com/u/87937371?v=4",
+      "profile": "https://github.com/furukaze-akane",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "drown0315",
+      "name": "drown0315",
+      "avatar_url": "https://avatars.githubusercontent.com/u/108989782?v=4",
+      "profile": "https://github.com/drown0315",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "commitType": "docs"
+}

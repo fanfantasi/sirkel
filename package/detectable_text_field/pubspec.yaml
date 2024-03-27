@@ -1,0 +1,19 @@
+name: detectable_text_field
+description: TextField with detection features. You can detect hashtags, at sign, url or anything you want. Helps you develop Twitter like app. Refinement of hashtagable
+version: 3.0.2
+homepage: https://github.com/santa112358/detectable_text_field
+
+environment:
+  sdk: '>=3.1.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_hooks: ^0.20.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+flutter:
