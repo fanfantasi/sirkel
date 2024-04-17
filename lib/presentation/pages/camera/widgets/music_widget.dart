@@ -9,7 +9,6 @@ import 'package:screenshare/core/widgets/debouncer.dart';
 import 'package:screenshare/core/widgets/loadmore.dart';
 import 'package:screenshare/domain/entities/music_entity.dart';
 import 'package:screenshare/presentation/bloc/music/music_cubit.dart';
-import 'package:screenshare/presentation/bloc/user/follow/follow_cubit.dart';
 
 class MusicWidget extends StatefulWidget {
   const MusicWidget({super.key});
@@ -37,6 +36,7 @@ class _MusicWidgetState extends State<MusicWidget> {
   void dispose() {
     musicStream.cancel();
     resultMusic.clear();
+    playIndex = -1;
     super.dispose();
   }
 
@@ -64,8 +64,10 @@ class _MusicWidgetState extends State<MusicWidget> {
       playIndex = -1;
       setState(() {});
     }else{
-      final String soundPath =
-            '${Config.baseUrlAudio}${resultMusic[index].file ?? ''}';
+      for (var e in resultMusic) {
+        e.play = false;
+      }
+      final String soundPath = '${Config.baseUrlAudio}${resultMusic[index].file ?? ''}';
       await MyAudioService.instance.play(
         path: soundPath,
         mute: false,
@@ -193,7 +195,13 @@ class _MusicWidgetState extends State<MusicWidget> {
                               icon: (resultMusic[i].play ?? false)
                                   ? const Icon(Icons.pause)
                                   : const Icon(Icons.play_arrow)),
-                          onTap: () => Navigator.pop(context, resultMusic[i]),
+                          onTap: () {
+                            for (var r in resultMusic) {
+                              r.play = false;
+                            }
+                            MyAudioService.instance.stop();
+                            Navigator.pop(context, resultMusic[i]);
+                          },
                         );
                       },
                     );

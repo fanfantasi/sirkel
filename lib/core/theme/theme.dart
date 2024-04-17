@@ -36,7 +36,7 @@ class ThemeModel {
       iconTheme: IconThemeData(color: Colors.grey[900]),
       actionsIconTheme: IconThemeData(color: Colors.grey[900]),
       centerTitle: false,
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: Colors.transparent,

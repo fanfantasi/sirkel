@@ -15,7 +15,13 @@ class RepositoryImpl implements Repository {
   Future<UserModel> getCurrentUser() async => await dataSource.getCurrentUser();
 
   @override
-  Future<PictureModel> getPicutres({int? page}) async => await dataSource.getPicutres(page: page);
+  Future<VideoTokenModel> getVideoToken() async => await dataSource.getVideoToken();
+
+  @override
+  Future<ContentModel> getContent({int? page}) async => await dataSource.getContent(page: page);
+
+  @override
+  Future<ContentModel> getFindContent({String? id}) async => await dataSource.getFindContent(id: id);
 
   @override
   Future<MusicModel> getMusic({String? params}) async => await dataSource.getMusic(params: params);
@@ -25,4 +31,13 @@ class RepositoryImpl implements Repository {
 
   @override
   Future<FollowModel> getFollow({String? name, int? page}) async => await dataSource.getFollow(name: name, page: page);
+
+  @override
+  Future<ResultModel> postContent({String? caption,
+    String? music,
+    String? typepost,
+    String? location,
+    List<String>? file,
+    List<String>? thumbnail,
+    List<String>? mentions,}) async => await dataSource.postContent(caption: caption, mentions: mentions, music: music, typepost: typepost, location: location, file: file, thumbnail: thumbnail);
 }

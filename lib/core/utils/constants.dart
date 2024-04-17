@@ -16,4 +16,8 @@ class Routes {
   static const cameraPage = '/camera-page';
   static const previewPicturePage = '/preview-picture-page';
 
+
+  static const galleryPage = '/gallery-page';
+  static const searchPage = '/search-page';
+
 }

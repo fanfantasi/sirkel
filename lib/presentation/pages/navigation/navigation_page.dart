@@ -2,10 +2,12 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:screenshare/core/utils/audio_service.dart';
 import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/core/utils/headers.dart';
 import 'package:screenshare/core/utils/utils.dart';
+import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/navigation/navigation_cubit.dart';
 import 'package:screenshare/presentation/pages/camera/camera_page.dart';
 import 'package:screenshare/presentation/pages/circle/circle_page.dart';
@@ -53,8 +55,9 @@ class _NavigationPageState extends State<NavigationPage> {
             }
           }
         }
+        onScrollListener();
       });
-      Config.scrollControllerHome.position.isScrollingNotifier.addListener(() { 
+      Config.scrollControllerHome.position.isScrollingNotifier.addListener(() {
         if(!Config.scrollControllerHome.position.isScrollingNotifier.value) {
           setState(() {
             Utilitas.scrolling =  'scroll is stopped';
@@ -66,18 +69,57 @@ class _NavigationPageState extends State<NavigationPage> {
         }
       });
     });
-    
-
     super.initState();
   }
+
+  
   void _scrollTop() async {
+    MyAudioService.instance.stop();
     await Config.scrollControllerHome.animateTo(0, duration: const Duration(milliseconds: 300),
     curve: Curves.easeIn);
     Config.scrollControllerHome.jumpTo(0.0);
     setState(() {
       jumpToTop = false;
     });
+  }
 
+  void onScrollListener() async {
+    if (Config.scrollControllerHome.position.pixels >=
+        Config.scrollControllerHome.position.maxScrollExtent && !Utilitas.isLastPage) {
+      if (Utilitas.isLoadMore) {
+        return;
+      }
+
+      if (!Utilitas.isLastPage) {
+        if (mounted) {
+          setState(() {
+            Utilitas.isLoadMore = true;
+            Utilitas.isRefreshPage = false;
+            Utilitas.isInitialPage = false;
+          });
+        }
+        Utilitas.page++;
+        await onLoadmore();
+      }else{
+        Future.delayed(const Duration(seconds: 1), () async {
+          setState(() {
+            Utilitas.isLoadMore = false;
+          });
+        });
+      }
+    }
+  }
+
+  Future onLoadmore() async {
+    if (!mounted) return;
+    Future.microtask(() async {
+      context.read<ContentCubit>().getContent(page: Utilitas.page);
+      Future.delayed(const Duration(seconds: 1), () async {
+        setState(() {
+          Utilitas.isLoadMore = false;
+        });
+      });
+    });
   }
 
   List<BottomNavigationBarItem> getNavigation(index) {
@@ -115,23 +157,10 @@ class _NavigationPageState extends State<NavigationPage> {
         label: 'Search',
       ),
       BottomNavigationBarItem(
-        icon: ValueListenableBuilder<String>(
-          valueListenable: avatar,
-          builder: (BuildContext context, String value, Widget? child) {
-            return CircleAvatar(
-              radius: 14,
-              backgroundColor: Theme.of(context).colorScheme.onPrimary,
-              child: ClipOval(
-                child: Image.network(value, errorBuilder: (context, error, stackTrace) {
-                  return Image.asset(
-                        'assets/icons/ic-add-user.png',
-                        width: 24,
-                        height: 24,
-                      );
-                },)
-              ),
-            );
-          }
+        icon: Image.asset(
+          'assets/icons/ic-add-user.png',
+          width: 24,
+          height: 24,
         ),
         label: 'User',
       ),
@@ -143,8 +172,8 @@ class _NavigationPageState extends State<NavigationPage> {
       key: scaffoldKey,
       body: tabs[pageindex],
       bottomNavigationBar: BlocBuilder<NavigationCubit, NavigationState>(
-          // buildWhen: (previous, current) =>
-          //     previous.index != current.index,
+          buildWhen: (previous, current) =>
+              previous.index != current.index,
           builder: (context, state) {
             return Container(
               decoration: BoxDecoration(
@@ -173,7 +202,7 @@ class _NavigationPageState extends State<NavigationPage> {
                     await availableCameras().then((value) => Navigator.pushNamed(context, Routes.cameraPage, arguments: value));
                   }
 
-                  if (jumpToTop){
+                  if (jumpToTop && index == 0){
                     _scrollTop();
                   }
                   

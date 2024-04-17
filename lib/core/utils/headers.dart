@@ -3,7 +3,7 @@
 
 import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/dbkey.dart';
-import 'package:screenshare/domain/entities/pictures_entity.dart';
+import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HeadersToken {
@@ -33,7 +33,7 @@ class Utils{
     return localUser;
   }
 
-  static userAvatar(ResultPictureEntity? data){
+  static userAvatar(ResultContentEntity? data){
     var avatar = data?.author?.avatar??'';
     if (avatar != ''){
       if (avatar.substring(0, 3) == 'http'){

@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:screenshare/core/widgets/loadingwidget.dart';
 import 'package:screenshare/dummy/storys.dart';
 import 'story_item.dart';
 
@@ -42,15 +41,7 @@ class StoryPage extends StatelessWidget {
                             radius: 14,
                             backgroundColor: Theme.of(context).colorScheme.onPrimary,
                             child: ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: value,
-                                placeholder: (context, url) => const LoadingWidget(),
-                                errorWidget: (context, url, error) => Image.asset(
-                                      'assets/icons/ic-account-user.png',
-                                      width: 64,
-                                      height: 64,
-                                    ),
-                              )
+                              child: CachedNetworkImage(imageUrl: value, key: UniqueKey(),)
                             ),
                           );
                         }

@@ -104,7 +104,9 @@ class _RefreshLoadmoreState extends State<RefreshLoadmore> {
     );
 
     if (widget.onRefresh == null) {
-      return Scrollbar(child: mainWiget);
+      return Scrollbar(
+        controller: _scrollController,
+        child: mainWiget);
     }
 
     return RefreshIndicator(
@@ -122,14 +124,16 @@ class _RefreshLoadmoreState extends State<RefreshLoadmore> {
 
 class LoadingWidget extends StatelessWidget {
   final bool fallingDot;
-  const LoadingWidget({Key? key, this.fallingDot = false}) : super(key: key);
+  final Color leftDotColor;
+  final Color rightDotColor;
+  const LoadingWidget({Key? key, this.fallingDot = false, this.leftDotColor = Colors.black12, this.rightDotColor = Colors.black54}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: LoadingAnimationWidget.flickr(
-        leftDotColor: Colors.black12,
-        rightDotColor: Colors.black54,
+        leftDotColor: leftDotColor,
+        rightDotColor: rightDotColor,
               size: 32)
     );
   }

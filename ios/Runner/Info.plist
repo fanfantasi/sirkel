@@ -51,6 +51,10 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>App requires microphone access for audio playback</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>In order to access your photo library.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>In order to access your photo library.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -62,7 +66,5 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This will allows you to share photos and videos from your library and save photos and videos to your camera roll.</string>
 </dict>
 </plist>

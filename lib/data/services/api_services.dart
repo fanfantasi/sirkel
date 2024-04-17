@@ -1,4 +1,6 @@
 
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/headers.dart';
@@ -79,13 +81,27 @@ class ApiService {
     }
   }
 
-  Future<PictureModel> getPictures({int? page}) async {
+  Future<ContentModel> getContent({int? page}) async {
     try {
       Response response = await dio
-          .get("/picture?page=$page", options: Options(
+          .get("/content?typepost=content&page=$page", options: Options(
             headers: {'Authorization': await HeadersToken.accessToken()}
           ));
-      return PictureModel.fromJSON(response.data);
+      return ContentModel.fromJSON(response.data);
+    } catch (error, stacktrace) {
+      throw Exception("Exception occurred: $error stackTrace: $stacktrace");
+    }
+  }
+
+  Future<ContentModel> getFindContent({String? id}) async {
+    try {
+      Response response = await dio
+          .post("/content/findone", data: {
+            'id': id,
+          }, options: Options(
+            headers: {'Authorization': await HeadersToken.accessToken()}
+          ));
+      return ContentModel.fromJSON(response.data);
     } catch (error, stacktrace) {
       throw Exception("Exception occurred: $error stackTrace: $stacktrace");
     }
@@ -110,4 +126,58 @@ class ApiService {
     }
   }
 
+  //Video Token
+  Future<VideoTokenModel> getVideoToken() async {
+    try{
+      Response response = await dio.get('/user/token', options: Options(
+            headers: {'Authorization': await HeadersToken.accessToken()}
+          ));
+      return VideoTokenModel.fromJSON(response.data);
+    }catch(error, stacktrace){
+      throw Exception("Exception occurred: $error stackTrace: $stacktrace");
+    }
+  }
+
+  //PostContent
+  Future<ResultModel> postContent({
+    String? caption,
+    String? music,
+    String? typepost,
+    String? location,
+    List<String>? file,
+    List<String>? thumbnail,
+    List<String>? mentions,
+  }) async {
+    try{
+      var formData = FormData.fromMap({
+        "caption": caption,
+        "music": music,
+        "typepost": typepost,
+        "location": location,
+        "mentions": jsonEncode(mentions)
+      }, ListFormat.multiCompatible);
+      for (var e in file??[]) {
+        formData.files.addAll([
+          MapEntry("file", await MultipartFile.fromFile(e, filename: e.split('/').last)),
+        ]);
+      }
+      for (var e in thumbnail??[]) {
+        formData.files.addAll([
+          MapEntry("thumbnail", await MultipartFile.fromFile(e, filename: e.split('/').last)),
+        ]);
+      }
+      for (var e in formData.files) {
+        print(e.value);
+        print(e);
+      }
+      Response response = await dio.post('/content', data: formData, options: Options(
+            headers: {'Authorization': await HeadersToken.accessToken()}
+          ));
+      return ResultModel.fromJSON(response.data);
+    }catch(error, stacktrace){
+      throw Exception("Exception occurred: $error stackTrace: $stacktrace");
+    }
+  }
+
+  
 }

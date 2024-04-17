@@ -8,7 +8,27 @@ extension StringDefine on String {
   bool hasScroll() {
     return contains('stopped');
   }
+
 }
+extension StringExtension on String {
+    String capitalize() {
+      return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
+    }
+
+    String extentionfile(){
+      if (this == 'mp4' || this == 'mov' || this == 'avi' || this == 'mpeg' || this == 'mkv'){
+        return 'video';
+      }
+
+      if (this == 'jpg' || this=='jpeg'|| this == 'png' || this == 'heif' || this == 'tiff'){
+        return 'image';
+      }
+      
+      return '';
+    }
+}
+
+
 extension IntegerExtension on int {
   String formatNumber() {
     final NumberFormat format = NumberFormat.compact();

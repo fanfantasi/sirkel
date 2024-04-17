@@ -7,8 +7,10 @@ import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/presentation/pages/auth/auth_page.dart';
 import 'package:screenshare/presentation/pages/camera/camera_page.dart';
 import 'package:screenshare/presentation/pages/camera/preview_page.dart';
+import 'package:screenshare/presentation/pages/gallery/gallery_page.dart';
 import 'package:screenshare/presentation/pages/navigation/navigation_page.dart';
 import 'package:screenshare/presentation/pages/profile/profile_page.dart';
+import 'package:screenshare/presentation/pages/search/search_page.dart';
 import 'package:screenshare/presentation/pages/settings/setting_page.dart';
 
 import '../pages/home/widgers/fullscreen_page.dart';
@@ -47,6 +49,12 @@ class RouteGenerator {
       case Routes.previewPicturePage:
         return MaterialPageRoute(
             builder: (_) => const PreviewPictureage(), settings: settings);
+      case Routes.galleryPage:
+        return MaterialPageRoute(
+            builder: (_) => const GalleryPage(), settings: settings);
+      case Routes.searchPage:
+        return MaterialPageRoute(
+            builder: (_) => const SearchPage(), settings: settings);
 
       default:
         return _errorRoute();

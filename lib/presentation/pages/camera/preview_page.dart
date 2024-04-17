@@ -1,19 +1,30 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:chewie/chewie.dart';
 import 'package:detectable_text_field/detectable_text_field.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:marquee/marquee.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:screenshare/core/utils/audio_service.dart';
+import 'package:screenshare/core/utils/config.dart';
+import 'package:screenshare/core/utils/extentions.dart';
 import 'package:screenshare/core/widgets/loadingwidget.dart';
 import 'package:screenshare/domain/entities/follow_entity.dart';
 import 'package:screenshare/domain/entities/music_entity.dart';
+import 'package:screenshare/domain/entities/post_content_entity.dart';
+import 'package:screenshare/presentation/bloc/content/post/post_content_cubit.dart';
 import 'package:screenshare/presentation/bloc/user/follow/follow_cubit.dart';
 import 'package:screenshare/presentation/pages/camera/widgets/mentions_widget.dart';
+import 'package:video_player/video_player.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+
 
 import 'widgets/music_widget.dart';
+import 'widgets/place_widget.dart';
 
 class PreviewPictureage extends StatefulWidget {
   const PreviewPictureage({super.key});
@@ -24,16 +35,24 @@ class PreviewPictureage extends StatefulWidget {
 
 class _PreviewPictureageState extends State<PreviewPictureage> {
   final ScrollController scrollController = ScrollController();
+  late VideoPlayerController videoPlayerController;
+  ChewieController? chewieController;
+  int? bufferDelay;
+
   bool firstAutoscrollExecuted = false;
   bool shouldAutoscroll = false;
   bool isShowAutoComplete = false;
+  bool isPlaying = false;
+  bool onTapCtrl = false;
   List<ResultFollowEntity> tagPeople = [];
   ResultMusicEntity? musicSelected;
+  String locationText = '';
 
   late StreamSubscription<FollowState> userStream;
   List<ResultFollowEntity> resultUser = [];
 
-  late final List<String> takeCamera;
+  PostContentEntity? takeCamera;
+  bool isInitial = false;
   FocusNode captionFocus = FocusNode();
 
   Timer? timeHandle;
@@ -48,18 +67,51 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
 
   @override
   void didChangeDependencies() {
-    var map = ModalRoute.of(context)!.settings.arguments as List<String>;
-    takeCamera = map;
+    if (takeCamera == null) {
+      var map = ModalRoute.of(context)!.settings.arguments as PostContentEntity;
+      takeCamera = map;
+      musicSelected = takeCamera!.music;
+
+      for (var e in takeCamera!.files!) {
+        if (e.split('.').last.toLowerCase().extentionfile() == 'video') {
+          videoPlayerController = VideoPlayerController.file(File(e))
+            ..initialize().then((_) {
+              chewieController = ChewieController(
+                videoPlayerController: videoPlayerController,
+                autoPlay: true,
+                looping: true,
+                showControls: false,
+                fullScreenByDefault: false,
+                allowFullScreen: false
+              );
+              setState(() {});
+            });
+        }
+      }
+    }
     super.didChangeDependencies();
   }
 
   @override
   void initState() {
+    isInitial = true;
     controller.addListener(() {
       setState(() {});
     });
     captionFocus.addListener(_onFocusChange);
     scrollController.addListener(_scrollListener);
+    WidgetsBinding.instance.addPostFrameCallback((v) async {
+      if (chewieController != null &&
+          chewieController!.videoPlayerController.value.isInitialized) {
+        chewieController!.addListener(() {
+          var isFullScreen = chewieController!.isFullScreen;
+          if (isFullScreen) {
+            chewieController!.exitFullScreen();
+          }
+        });
+      }
+    });
+
     super.initState();
   }
 
@@ -91,8 +143,11 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
     scrollController.removeListener(_scrollListener);
     scrollController.dispose();
     controller.dispose();
-    userStream.cancel();
+    if (resultUser.isNotEmpty) userStream.cancel();
     isShowAutoComplete = false;
+    isInitial = false;
+    chewieController?.dispose();
+    videoPlayerController.dispose();
     super.dispose();
   }
 
@@ -155,6 +210,50 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
           offset: int.parse(
               (selection.baseOffset + length - searchLength + 1).toString())),
     );
+  }
+
+  void _onPlayerHide() {
+    Future.delayed(const Duration(seconds: 4), () {
+      setState(() {
+        onTapCtrl = false;
+      });
+    });
+  }
+
+  Future _submited() async {
+    try {
+      List<String> file = [];
+      List<String> thumbnail = [];
+      for (var e in takeCamera!.files!) {
+        file.add(e);
+        if (e.split('.').last.toLowerCase().extentionfile() == 'video'){
+          final fileName = await VideoThumbnail.thumbnailFile(
+            video: e,
+            thumbnailPath: (await getTemporaryDirectory()).path,
+            imageFormat: ImageFormat.PNG,
+            maxHeight: 920,
+            quality: 75,
+          );
+          thumbnail.add(fileName??'');
+        }
+      }
+      List<String> menstions = [];
+      for (var e in tagPeople) {
+        menstions.add(e.user?.id ?? '');
+      }
+      if (!mounted) return;
+      context.read<PostContentCubit>().postContent(
+          caption: controller.text,
+          file: file,
+          thumbnail: thumbnail,
+          location: locationText,
+          mentions: menstions,
+          music: musicSelected?.id,
+          typepost: takeCamera?.type);
+      Navigator.pop(context);
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 
   @override
@@ -252,14 +351,26 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
                         Theme.of(context).colorScheme.primary, BlendMode.srcIn),
                   ),
                   title: Text(
-                    musicSelected == null ? 'Pilih Music' : musicSelected?.name??'', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                    musicSelected == null
+                        ? 'Pilih Music'
+                        : musicSelected?.name ?? '',
+                    style: const TextStyle(
+                        color: Colors.black, fontWeight: FontWeight.bold),
                   ),
-                  subtitle: musicSelected == null ? SizedBox.fromSize() : Text(musicSelected?.artist??' -- '),
-                  trailing: musicSelected == null ? const Icon(Icons.arrow_forward_ios_rounded): IconButton(onPressed: (){
-                    setState(() {
-                      musicSelected = null;
-                    });
-                  }, icon: const Icon(Icons.close)),
+                  subtitle: musicSelected == null
+                      ? SizedBox.fromSize()
+                      : Text(musicSelected?.artist ?? ' -- '),
+                  trailing: musicSelected == null
+                      ? const Icon(Icons.arrow_forward_ios_rounded)
+                      : IconButton(
+                          onPressed: () {
+                            setState(() {
+                              musicSelected = null;
+                              isPlaying = false;
+                            });
+                            MyAudioService.instance.stop();
+                          },
+                          icon: const Icon(Icons.close)),
                   shape: Border(
                     bottom: BorderSide(
                         color: Theme.of(context)
@@ -271,34 +382,37 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
                   onTap: () => showButtomSheetMusic(),
                 ),
                 ListTile(
-                  minLeadingWidth: 0,
-                  visualDensity: const VisualDensity(vertical: -3),
-                  leading: SvgPicture.asset(
-                    'assets/svg/location.svg',
-                    colorFilter: ColorFilter.mode(
-                        Theme.of(context).colorScheme.primary, BlendMode.srcIn),
-                  ),
-                  title: Text(
-                    'location'.tr(),
-                  ),
-                  subtitle: const Text('Pandeglang - Banten'),
-                  trailing: const Icon(Icons.arrow_forward_ios_outlined),
-                  shape: Border(
-                    bottom: BorderSide(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(.5),
-                        width: .2),
-                  ),
-                ),
+                    minLeadingWidth: 0,
+                    visualDensity: const VisualDensity(vertical: -3),
+                    leading: SvgPicture.asset(
+                      'assets/svg/location.svg',
+                      colorFilter: ColorFilter.mode(
+                          Theme.of(context).colorScheme.primary,
+                          BlendMode.srcIn),
+                    ),
+                    title: Text(
+                      'location'.tr(),
+                    ),
+                    subtitle: locationText == ''
+                        ? SizedBox.fromSize()
+                        : Text(locationText),
+                    trailing: const Icon(Icons.arrow_forward_ios_outlined),
+                    shape: Border(
+                      bottom: BorderSide(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(.5),
+                          width: .2),
+                    ),
+                    onTap: () => showButtomSheetLocation()),
                 Container(
                   width: MediaQuery.of(context).size.width,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12.0, vertical: 18.0),
                   child: ElevatedButton(
                     onPressed: () {
-                      print(controller);
+                      _submited();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
@@ -335,8 +449,8 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
                     child: BlocBuilder<FollowCubit, FollowState>(
                       builder: (context, state) {
                         if (state is FollowLoading) {
-                          return const LoadingWidget(
-                            color: Colors.pink,
+                          return LoadingWidget(
+                            leftcolor: Theme.of(context).primaryColor,
                           );
                         } else {
                           return ListView.builder(
@@ -391,34 +505,160 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
       child: Stack(
         children: [
           ListView.builder(
-            itemCount: takeCamera.length,
+            itemCount: takeCamera?.files?.length,
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
-              return Image.file(
-                File(takeCamera[index]),
-                fit: BoxFit.cover,
-                height: MediaQuery.of(context).size.width,
-                width: MediaQuery.of(context).size.width,
-              );
+              if (takeCamera!.files![index]
+                      .split('.')
+                      .last
+                      .toLowerCase()
+                      .extentionfile() ==
+                  'image') {
+                return Image.file(
+                  File(takeCamera!.files![index]),
+                  fit: BoxFit.cover,
+                  height: MediaQuery.of(context).size.width,
+                  width: MediaQuery.of(context).size.width,
+                );
+              } else if (takeCamera!.files![index]
+                      .split('.')
+                      .last
+                      .toLowerCase()
+                      .extentionfile() ==
+                  'video') {
+                return chewieController != null &&
+                        chewieController!
+                            .videoPlayerController.value.isInitialized
+                    ? Container(
+                        color: Colors.black,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              videoPlayerController.value.isPlaying
+                                  ? videoPlayerController.pause()
+                                  : videoPlayerController.play();
+                              onTapCtrl = true;
+                            });
+                          },
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Chewie(
+                                key: UniqueKey(),
+                                controller: chewieController!,
+                              ),
+                              Positioned(
+                                top: 0,
+                                bottom: 0,
+                                child: AnimatedOpacity(
+                                  duration: const Duration(seconds: 1),
+                                  opacity: onTapCtrl ? 1 : 0,
+                                  onEnd: _onPlayerHide,
+                                  child: CircleAvatar(
+                                    backgroundColor:
+                                        Colors.black.withOpacity(.3),
+                                    radius: 24,
+                                    child: videoPlayerController.value.isPlaying
+                                        ? const Icon(Icons.pause,
+                                            color: Colors.white)
+                                        : const Icon(Icons.play_arrow,
+                                            color: Colors.white),
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink();
+              }
+              return const SizedBox.shrink();
             },
           ),
           if (tagPeople.isNotEmpty)
-          Positioned(
-            bottom: 10,
-            left: 10,
-            child: Container(
-                padding: const EdgeInsets.all(4),
+            Positioned(
+              bottom: 10,
+              left: 10,
+              child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                      color:
+                          Theme.of(context).colorScheme.primary.withOpacity(.5),
+                      borderRadius: BorderRadius.circular(8.0)),
+                  child: SvgPicture.asset(
+                    'assets/svg/user-tag.svg',
+                    colorFilter: ColorFilter.mode(
+                        Theme.of(context).colorScheme.onPrimary,
+                        BlendMode.srcIn),
+                  )),
+            ),
+          if (musicSelected != null)
+            Positioned(
+              bottom: 8,
+              left: 50,
+              right: 30,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 6.0),
                 decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).colorScheme.primary.withOpacity(.5),
-                    borderRadius: BorderRadius.circular(8.0)),
-                child: SvgPicture.asset(
-                  'assets/svg/user-tag.svg',
-                  colorFilter: ColorFilter.mode(
-                      Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
-                )),
-          )
+                  color: Theme.of(context).colorScheme.primary.withOpacity(.5),
+                  borderRadius: BorderRadius.circular(18.0),
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        if (isPlaying) {
+                          MyAudioService.instance.pause();
+                        } else {
+                          if (MyAudioService.instance.player.playing) {
+                            MyAudioService.instance.playagain(false);
+                          } else {
+                            final String soundPath =
+                                '${Config.baseUrlAudio}${musicSelected?.file ?? ''}';
+                            MyAudioService.instance.play(
+                              path: soundPath,
+                              startedPlaying: () {
+                                isPlaying = true;
+                                setState(() {});
+                              },
+                              stoppedPlaying: () {
+                                isPlaying = false;
+                                setState(() {});
+                              },
+                            );
+                          }
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Icon(
+                          isPlaying ? Icons.pause : Icons.play_arrow,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 5,
+                    ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * .65,
+                      height: 18,
+                      child: Marquee(
+                        text: '${musicSelected?.name ?? ''} ',
+                        fadingEdgeStartFraction: .2,
+                        fadingEdgeEndFraction: .2,
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -440,7 +680,30 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
     }
   }
 
+  void showButtomSheetLocation() async {
+    if (MyAudioService.instance.player.playing) {
+      MyAudioService.instance.pause();
+    }
+    var res = await showModalBottomSheet(
+        backgroundColor: Colors.transparent,
+        context: context,
+        isScrollControlled: true,
+        builder: (context) {
+          return const PlaceWidget();
+        });
+    MyAudioService.instance.playagain(false);
+    if (res != null) {
+      locationText = res;
+      setState(() {});
+    }
+  }
+
   void showButtomSheetMusic() async {
+    if (MyAudioService.instance.player.playing) {
+      MyAudioService.instance.pause();
+    } else {
+      MyAudioService.instance.stop();
+    }
     var result = await showModalBottomSheet(
         backgroundColor: Colors.transparent,
         context: context,
@@ -448,13 +711,11 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
         builder: (context) {
           return const MusicWidget();
         });
-    MyAudioService.instance.stop();
+
     if (result != null) {
-      
       setState(() {
         musicSelected = result;
       });
-      
     }
   }
 }

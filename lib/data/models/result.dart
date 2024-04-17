@@ -5,7 +5,7 @@ class ResultModel extends ResultEntity {
       : super(
           error: json['error'],
           message: json['message'],
-          returned: json['data']['id']
+          returned: json['data'] != null ? json['data']['id'] : null
         );
 
   Map<String, dynamic> toJson() => {

@@ -14,6 +14,9 @@ class DataSourceImpl implements DataSource {
   @override
   Future<UserModel> getCurrentUser() async => await api.getCurrentUser();
 
+  @override
+  Future<VideoTokenModel> getVideoToken() async => await api.getVideoToken();
+
    @override
   Future<FollowModel> getFollow({String? name, int? page}) async => await api.getFollow(name: name, page: page);
 
@@ -21,9 +24,20 @@ class DataSourceImpl implements DataSource {
   Future<MusicModel> getMusic({String? params}) async => await api.getMusic(params: params);
 
   @override
-  Future<PictureModel> getPicutres({int? page}) async => await api.getPictures(page: page);
+  Future<ContentModel> getContent({int? page}) async => await api.getContent(page: page);
+
+  @override
+  Future<ContentModel> getFindContent({String? id}) async => await api.getFindContent(id: id);
 
   @override
   Future<ResultModel> liked({String? id, String? postId}) async => await api.liked(id: id, postId: postId);
 
+  @override
+  Future<ResultModel> postContent({String? caption,
+    String? music,
+    String? typepost,
+    String? location,
+    List<String>? file,
+    List<String>? thumbnail,
+    List<String>? mentions,}) async => await api.postContent(caption: caption, mentions: mentions, music: music, typepost: typepost, location: location, file: file, thumbnail: thumbnail);
 }

@@ -1,13 +1,23 @@
+import 'dart:io';
+
 import 'package:camera/camera.dart';
+import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:marquee/marquee.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:screenshare/core/utils/audio_service.dart';
+import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/constants.dart';
+import 'package:screenshare/core/utils/extentions.dart';
+import 'package:screenshare/core/widgets/camera_countdown.dart';
 import 'package:screenshare/core/widgets/loadingwidget.dart';
+import 'package:screenshare/domain/entities/music_entity.dart';
+import 'package:screenshare/domain/entities/post_content_entity.dart';
+
+import 'widgets/music_widget.dart';
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
@@ -17,22 +27,20 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage> {
-  late CameraController cameraController;
-  late List<CameraDescription>? cameras;
-  
-  bool isLoadingPage = true;
-  bool isRearCameraSelected = false;
-  bool flashMode = false;
+  ResultMusicEntity? musicSelected;
+
 
   PageController pageController =
       PageController(initialPage: 1, viewportFraction: .2);
-  PageController pageCameraController =
-      PageController(initialPage: 0, viewportFraction: .2);
-  
+
   int selectedTab = 1;
+  final List<Map<String, dynamic>> postTypes = [
+    {"typepost":'story', "label":"story".tr(),},
+    {"typepost":'content', "label":"content".tr(),},
+  ];
   int cameraTab = 0;
 
-  List<String> imageResult= [];
+  List<String> imageResult = [];
 
   @override
   void didChangeDependencies() {
@@ -47,93 +55,88 @@ class _CameraPageState extends State<CameraPage> {
   void initState() {
     MyAudioService.instance.stop();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      if (cameras!.isNotEmpty){
-        initCamera(cameras![1]);
-      }else{
-        Fluttertoast.showToast(msg: 'Camera Error');
-        uploadPicture();
-      }
-      
-      isLoadingPage = false;
+      globalChewie?.pause();
     });
 
     super.initState();
   }
 
-  Future initCamera(CameraDescription cameraDescription) async {
-    cameraController =
-        CameraController(cameraDescription, ResolutionPreset.medium);
-    try {
-      await cameraController.initialize().then((_) {
-        if (!mounted) return;
-        setState(() {});
-      });
-    } on CameraException catch (e) {
-      debugPrint("camera error $e");
-    }
-  }
 
-  Future takePicture() async {
-    imageResult.clear();
-    if (!cameraController.value.isInitialized) {
-      return null;
-    }
-    if (cameraController.value.isTakingPicture) {
-      return null;
-    }
-    try {
-      await cameraController.setFlashMode(flashMode ? FlashMode.always : FlashMode.off);
-      XFile picture = await cameraController.takePicture();
-      imageResult.add(picture.path);
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, Routes.previewPicturePage, arguments: imageResult);
-      
-    } on CameraException catch (e) {
-      debugPrint('Error occured while taking picture: $e');
-      return null;
-    }
-  }
+  // Future takePicture() async {
+  //   imageResult.clear();
+  //   if (!cameraController.value.isInitialized) {
+  //     return null;
+  //   }
+  //   if (cameraController.value.isTakingPicture) {
+  //     return null;
+  //   }
+  //   try {
+  //     // await cameraController
+  //     //     .setFlashMode(flashMode ? FlashMode.always : FlashMode.off);
+  //     XFile picture = await cameraController.takePicture();
+  //     imageResult.add(picture.path);
+  //     if (!mounted) return;
+  //     Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
+  //         arguments: imageResult);
+  //   } on CameraException catch (e) {
+  //     debugPrint('Error occured while taking picture: $e');
+  //     return null;
+  //   }
+  // }
 
   Future<void> uploadPicture() async {
+    MyAudioService.instance.stop();
     imageResult.clear();
-    final ImagePicker picker = ImagePicker();
-    final List<XFile> images = await picker.pickMultiImage(requestFullMetadata: true);
-    if (images.isNotEmpty) {
-      for (var e in images) {
-        imageResult.add(e.path);
+    // final ImagePicker picker = ImagePicker();
+    // // final pickerResult = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.media, allowCompression: true);
+    // final List<XFile> images = await picker.pickMultiImage(requestFullMetadata: true);
+    // if (images.isNotEmpty) {
+    //   for (var e in images) {
+    //     imageResult.add(e.path);
+    //   }
+    //   if (!mounted) return;
+    //   Navigator.pushNamed(context, Routes.previewPicturePage,
+    //       arguments: PostContentEntity(files: imageResult, music: musicSelected));
+    // }
+    // var res = await Navigator.pushNamed(context, Routes.galleryPage, arguments: 4);
+    Navigator.pushNamed(context, Routes.galleryPage, arguments: 4).then((value) async {
+      List<AssetEntity> items = value as List<AssetEntity>;
+      List<String> path=[];
+      // 
+      if (items.isNotEmpty){
+        for (var e in items) {
+          final File? imageFile = await e.file;
+          path.add(imageFile!.path);
+          print(imageFile.path);
+        }
+
+        
+        if (!mounted) return;
+          Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
+          arguments: PostContentEntity(files: path, music: musicSelected, type: postTypes[selectedTab]['typepost']));
       }
-      if (!mounted) return;
-      Navigator.pushNamed(context, Routes.previewPicturePage, arguments: imageResult);
-    }
-}
+    });
+    // print(res);
+  }
 
   @override
   void dispose() {
     pageController.dispose();
-    if (cameras!.isNotEmpty){
-      cameraController.dispose();
-    }
-    
+    MyAudioService.instance.stop();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(),
-      // extendBodyBehindAppBar: true,
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          isLoadingPage
-              ? _buildLoadingCamera()
-              : (cameraController.value.isInitialized)
-                  ? _buildCameraPreview()
-                  : _buildLoadingCamera(),
+         _buildCameraAwesome(),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 18.0),
-            height: kToolbarHeight * 2,
+          SizedBox(
+            height: kToolbarHeight,
             child: _buildCameraTemplateSelector(),
           ),
         ],
@@ -148,64 +151,147 @@ class _CameraPageState extends State<CameraPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const LoadingWidget(color: Colors.pink),
-          Text('please wait'.tr(), style: const TextStyle(color: Colors.white),)
+          LoadingWidget(leftcolor: Theme.of(context).primaryColor, rightcolor: Colors.white,),
+          Text(
+            'please wait'.tr(),
+            style: const TextStyle(color: Colors.white),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildCameraPreview() {
+  Widget _buildCameraAwesome() {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - (kToolbarHeight),
+      child: CameraAwesomeBuilder.custom(
+        progressIndicator: _buildLoadingCamera(),
+        enablePhysicalButton: false,
+        filters: [AwesomeFilter.AddictiveBlue],
+        builder: (state, preview) {
+          return AwesomeCameraLayout(
+            state: state,
+            topActions: _buildTopWidget(state, preview),
+            middleContent: Column(
+              children: [
+                const Spacer(),
+                if (state.captureMode == CaptureMode.photo)
+                  AwesomeFilterWidget(state: state),
+                AwesomeCameraModeSelector(state: state),
+                if (state is VideoRecordingCameraState)
+                  CameraCountdown(
+                    time: const Duration(seconds: 10),
+                    callback: () {
+                      state.stopRecording(onVideo: (request) {
+                        return request;
+                      },);
+                    },
+                  ),
+              ],
+            ),
+            bottomActions: _buildButtomWidget(state, preview),
+          );
+        },
+        saveConfig: SaveConfig.photoAndVideo(),
+        onMediaCaptureEvent: (event) {
+          switch ((event.status, event.isPicture, event.isVideo)) {
+            case (MediaCaptureStatus.capturing, true, false):
+              debugPrint('Capturing picture...');
+            case (MediaCaptureStatus.success, true, false):
+              event.captureRequest.when(
+                single: (single) {
+                  debugPrint('Picture saved: ${single.file?.path}');
+                      imageResult.add(single.file?.path??'');
+                      if (!mounted) return;
+                      Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
+                          arguments: PostContentEntity(files: imageResult, music: musicSelected, type: postTypes[selectedTab]['typepost']));
+                                },
+                multiple: (multiple) {
+                  multiple.fileBySensor.forEach((key, value) {
+                    debugPrint('multiple image taken: $key ${value?.path}');
+                  });
+                },
+              );
+            case (MediaCaptureStatus.failure, true, false):
+              debugPrint('Failed to capture picture: ${event.exception}');
+            case (MediaCaptureStatus.capturing, false, true):
+              debugPrint('Capturing video...');
+            case (MediaCaptureStatus.success, false, true):
+              event.captureRequest.when(
+                single: (single) {
+                  debugPrint('Video saved: ${single.file?.path}');
+                  imageResult.add(single.file?.path??'');
+                      if (!mounted) return;
+                      Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
+                          arguments: PostContentEntity(files: imageResult, music: musicSelected, type: postTypes[selectedTab]['typepost']));
+                },
+                multiple: (multiple) {
+                  multiple.fileBySensor.forEach((key, value) {
+                    debugPrint('multiple video taken: $key ${value?.path}');
+                  });
+                },
+              );
+            case (MediaCaptureStatus.failure, false, true):
+              debugPrint('Failed to capture video: ${event.exception}');
+            default:
+              debugPrint('Unknown event: $event');
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildTopWidget(CameraState state, Preview preview) {
     TextStyle style = Theme.of(context).textTheme.bodyLarge!.copyWith(
         fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold);
     return Container(
-      color: Colors.transparent,
-      height: MediaQuery.of(context).size.height - (kToolbarHeight * 2),
-      child: Stack(
-        alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 18.0),
+      height: kToolbarHeight * 2.5,
+      width: MediaQuery.of(context).size.width,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Transform.scale(
-            scale: 1.5,
-            alignment: Alignment.center,
-            child: CameraPreview(cameraController),
-          ),
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                    top: kToolbarHeight, left: 24.0, right: 25),
+          GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Icon(
+                  Icons.close,
+                  shadows: <Shadow>[
+                    Shadow(color: Colors.black, blurRadius: 1.0)
+                  ],
+                  color: Colors.white,
+                ),
+              )),
+          GestureDetector(
+            onTap: () => showButtomSheetMusic(),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 6.0, horizontal: 10),
+              height: kToolbarHeight * .7,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(.25),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * .55,
+                height: 18,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(
-                        Icons.close,
-                        shadows: <Shadow>[
-                          Shadow(color: Colors.black, blurRadius: 1.0)
-                        ],
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 3.0),
+                      child: Icon(
+                        CupertinoIcons.music_note_2,
                         color: Colors.white,
+                        size: 16,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 6.0, horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(.25),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 3.0),
-                            child: Icon(
-                              CupertinoIcons.music_note_2,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            "Tambah Musik",
+                    musicSelected == null
+                        ? Text(
+                            'Pilih Music',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyLarge!
@@ -214,141 +300,140 @@ class _CameraPageState extends State<CameraPage> {
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold),
                           )
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * .25,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildIconWithText('flip', 'Flip', style, 24,
-                              onTap: () {
-                            setState(() =>
-                                isRearCameraSelected = !isRearCameraSelected);
-                            initCamera(cameras![isRearCameraSelected ? 0 : 1]);
-                          }),
-                          _buildIconWithText('filter', 'Filter', style, 24),
-                          GestureDetector(
-                            onTap: (){
-                              setState(() {
-                                flashMode = !flashMode;
-                              });
-                            },
-                            child: Column(
-                              children: [
-                                SvgPicture.asset(
-                                  flashMode ? 'assets/svg/flash-on.svg' : 'assets/svg/flash.svg',
-                                  height: 24,
-                                  colorFilter: ColorFilter.mode(
-                                      Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
-                                ),
-                                const SizedBox(
-                                  height: 5,
-                                ),
-                                Text(
-                                  'Flash',
-                                  style: style.copyWith(
-                                    shadows: <Shadow>[
-                                      const Shadow(color: Colors.black, blurRadius: 1.0)
-                                    ],
-                                  ),
-                                )
-                              ],
+                        : SizedBox(
+                            width: MediaQuery.of(context).size.width * .4,
+                            height: 18,
+                            child: Marquee(
+                              text: '${musicSelected?.name ?? ''} ',
+                              fadingEdgeEndFraction: .2,
+                              fadingEdgeStartFraction: .2,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge!
+                                  .copyWith(
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ],
-                      ),
-                    )
+                    if (musicSelected != null)
+                      GestureDetector(
+                        onTap: () {
+                          MyAudioService.instance.stop();
+                          setState(() {
+                            musicSelected = null;
+                          });
+                          
+                        },
+                        child: const SizedBox(
+                          width: kToolbarHeight * .5,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 3.0),
+                            child: Icon(
+                              CupertinoIcons.clear,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      )
                   ],
                 ),
               ),
-              const Spacer(),
-              _buildCameraTypeSelector(),
-              const SizedBox(
-                height: 10,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildIconWithText(
-                        'emot', 'Effects', style.copyWith(fontSize: 11), 32),
-                    GestureDetector(
-                      onTap: () => takePicture(),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white, width: 4),
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        child: const CircleAvatar(
-                          backgroundColor: Colors.white,
-                          radius: 30,
-                        ),
-                      ),
-                    ),
-                    _buildIconWithText(
-                        'gallery', 'Upload', style.copyWith(fontSize: 11), 32, 
-                      onTap: () => uploadPicture(),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-            ],
+            ),
           ),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * .25,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (state.captureMode == CaptureMode.photo)
+                  AwesomeFilterButton(
+                    state: state,
+                    iconBuilder: () {
+                      return _buildIconWithText('filter', 'Filter', style, 24);
+                    },
+                  ),
+                if (preview.isBackCamera)
+                  AwesomeFlashButton(
+                    state: state,
+                    iconBuilder: (p0) {
+                      return Column(
+                        children: [
+                          SvgPicture.asset(
+                            p0.name == 'none'
+                                ? 'assets/svg/flash.svg'
+                                : 'assets/svg/flash-on.svg',
+                            height: 24,
+                            colorFilter: ColorFilter.mode(
+                                Theme.of(context).colorScheme.onPrimary,
+                                BlendMode.srcIn),
+                          ),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          Text(
+                            p0.name == 'none' ? 'Flash' : p0.name.capitalize(),
+                            style: style.copyWith(
+                              shadows: <Shadow>[
+                                const Shadow(
+                                    color: Colors.black, blurRadius: 1.0)
+                              ],
+                            ),
+                          )
+                        ],
+                      );
+                    },
+                  ),
+              ],
+            ),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildCameraTypeSelector() {
-    final List<String> cameraStoryTypes = ["photo".tr(), "video".tr()];
-    final List<String> cameraTypes = ["photo".tr()];
+  Widget _buildButtomWidget(CameraState state, Preview preview) {
     TextStyle style = Theme.of(context).textTheme.bodyLarge!.copyWith(
         fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold);
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        GestureDetector(
-          child: Container(
-            width: 65,
-            height: 25,
-            decoration: BoxDecoration(
-                color: Colors.black.withOpacity(.4),
-                borderRadius: BorderRadius.circular(50)),
-          ),
+    return AwesomeBottomActions(
+      state: state,
+      left: AwesomeCameraSwitchButton(
+        state: state,
+        iconBuilder: () => Column(
+          children: [
+            SvgPicture.asset(
+              'assets/svg/flip.svg',
+              height: 32,
+              colorFilter: ColorFilter.mode(
+                  Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
+            ),
+            const SizedBox(
+              height: 5,
+            ),
+            Text(
+              'Flip',
+              style: style.copyWith(
+                shadows: <Shadow>[
+                  const Shadow(color: Colors.black, blurRadius: 1.0)
+                ],
+              ),
+            )
+          ],
         ),
-        SizedBox(
-          height: 54,
-          child: PageView.builder(
-            controller: pageCameraController,
-            itemCount: selectedTab == 0 ? cameraTypes.length : cameraStoryTypes.length,
-            onPageChanged: (value) {
-              setState(() {
-                cameraTab = value;
-              });
-            },
-            itemBuilder: (context, index) {
-              return Container(
-                alignment: Alignment.center,
-                width: 50,
-                height: 32,
-                child: Text(
-                  selectedTab == 0 ? cameraTypes[index] : cameraStoryTypes[index],
-                  style: style.copyWith(shadows: <Shadow>[
-                    const Shadow(color: Colors.black, blurRadius: .5)
-                  ], color: Colors.white),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+        onSwitchTap: (state) {
+          state.switchCameraSensor(
+            aspectRatio: state.sensorConfig.aspectRatio,
+          );
+        },
+      ),
+      right: _buildIconWithText(
+        'gallery',
+        'Upload',
+        style.copyWith(fontSize: 11),
+        32,
+        onTap: () => uploadPicture(),
+      ),
     );
   }
 
@@ -382,11 +467,7 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Widget _buildCameraTemplateSelector() {
-    final List<String> postTypes = [
-      "picture".tr(),
-      "story".tr(),
-      "template".tr()
-    ];
+    
     TextStyle style = Theme.of(context).textTheme.bodyLarge!.copyWith(
         fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold);
     return Align(
@@ -396,7 +477,7 @@ class _CameraPageState extends State<CameraPage> {
         children: [
           Container(
             color: Colors.transparent,
-            height: kToolbarHeight,
+            height: 42,
             child: PageView.builder(
               controller: pageController,
               itemCount: postTypes.length,
@@ -411,9 +492,10 @@ class _CameraPageState extends State<CameraPage> {
                   width: 50,
                   height: kToolbarHeight,
                   child: Text(
-                    postTypes[index],
+                    postTypes[index]['label'],
                     style: style.copyWith(
-                        color: selectedTab == index ? Colors.white : Colors.grey),
+                        color:
+                            selectedTab == index ? Colors.white : Colors.grey),
                   ),
                 );
               },
@@ -421,7 +503,8 @@ class _CameraPageState extends State<CameraPage> {
           ),
           Container(
             width: 50,
-            height: 42,
+            height: 32,
+            margin: const EdgeInsets.only(top: 12.0),
             alignment: Alignment.bottomCenter,
             child: const CircleAvatar(
               backgroundColor: Colors.white,
@@ -431,5 +514,33 @@ class _CameraPageState extends State<CameraPage> {
         ],
       ),
     );
+  }
+
+  void showButtomSheetMusic() async {
+    if (musicSelected != null) {
+      MyAudioService.instance.stop();
+    }
+    var result = await showModalBottomSheet(
+        backgroundColor: Colors.transparent,
+        context: context,
+        isScrollControlled: true,
+        builder: (context) {
+          return const MusicWidget();
+        });
+    if (result != null) {
+      setState(() {
+        musicSelected = result;
+      });
+
+      final String soundPath = '${Config.baseUrlAudio}${result?.file ?? ''}';
+      await MyAudioService.instance.play(
+        path: soundPath,
+        mute: false,
+        startedPlaying: () {},
+        stoppedPlaying: () {},
+      );
+    }else{
+      MyAudioService.instance.playagain(false);
+    }
   }
 }
