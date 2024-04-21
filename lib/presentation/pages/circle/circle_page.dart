@@ -17,6 +17,7 @@ class _CirclePageState extends State<CirclePage> {
         leading: Image.asset('assets/icons/ic-book.png', scale: 5,),
         title: Text('all sirkel'.tr()),
       ),
+      body: Container(),
     );
   }
 }

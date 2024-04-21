@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:screenshare/core/utils/headers.dart';
+import 'package:screenshare/core/utils/utils.dart';
 import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:transparent_image/transparent_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -8,13 +10,21 @@ class UserProfileWidget extends StatelessWidget {
   final ResultContentEntity data;
   final Color? color;
   final bool isVideo;
-  const UserProfileWidget({super.key, required this.data, this.color, this.isVideo=false});
+  final double horizontal;
+  final bool moreMenus;
+  const UserProfileWidget(
+      {super.key,
+      required this.data,
+      this.color,
+      this.horizontal = 15.0,
+      this.isVideo = false,
+      this.moreMenus = true});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: MediaQuery.of(context).size.width,
-      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: 12.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -48,80 +58,108 @@ class UserProfileWidget extends StatelessWidget {
               const SizedBox(
                 width: 10,
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Text(
-                    data.author?.name ?? '',
-                    style: GoogleFonts.sourceSansPro(
-                      color: color ?? Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      shadows: [
-                        Shadow(
-                            offset: const Offset(.5, .5),
-                            blurRadius: 1.0,
-                            color: isVideo
-                                ? Colors.grey.withOpacity(.5)
-                                : Theme.of(context).colorScheme.onPrimary),
-                        Shadow(
-                            offset: const Offset(.5, .5),
-                            blurRadius: 1.0,
-                            color: isVideo
-                                ? Colors.grey.withOpacity(.5)
-                                : Theme.of(context).colorScheme.onPrimary),
-                      ],
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.author?.name ?? '',
+                        style: GoogleFonts.sourceSansPro(
+                          color: color ?? Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          shadows: [
+                            Shadow(
+                                offset: const Offset(.5, .5),
+                                blurRadius: 1.0,
+                                color: isVideo
+                                    ? Colors.grey.withOpacity(.5)
+                                    : Theme.of(context).colorScheme.onPrimary),
+                            Shadow(
+                                offset: const Offset(.5, .5),
+                                blurRadius: 1.0,
+                                color: isVideo
+                                    ? Colors.grey.withOpacity(.5)
+                                    : Theme.of(context).colorScheme.onPrimary),
+                          ],
+                        ),
+                      ),
+                      if (moreMenus)
+                      Text(
+                        timeago.format(DateTime.parse(data.createdAt!),
+                            locale: 'id'),
+                        style: TextStyle(
+                          color: color ??
+                              Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.5),
+                          fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                          shadows: [
+                            Shadow(
+                                offset: const Offset(.5, .5),
+                                blurRadius: 1.0,
+                                color: isVideo
+                                    ? Colors.grey.withOpacity(.5)
+                                    : Theme.of(context).colorScheme.onPrimary),
+                            Shadow(
+                                offset: const Offset(.5, .5),
+                                blurRadius: 1.0,
+                                color: isVideo
+                                    ? Colors.grey.withOpacity(.5)
+                                    : Theme.of(context).colorScheme.onPrimary),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    timeago.format(DateTime.parse(data.createdAt!),
-                        locale: 'id'),
-                    style: TextStyle(
-                      color: color ??
-                          Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.5),
-                      fontWeight: FontWeight.w400,
-                      fontSize: 12,
-                      shadows: [
-                        Shadow(
-                            offset: const Offset(.5, .5),
-                            blurRadius: 1.0,
-                            color: isVideo
-                                ? Colors.grey.withOpacity(.5)
-                                : Theme.of(context).colorScheme.onPrimary),
-                        Shadow(
-                            offset: const Offset(.5, .5),
-                            blurRadius: 1.0,
-                            color: isVideo
-                                ? Colors.grey.withOpacity(.5)
-                                : Theme.of(context).colorScheme.onPrimary),
-                      ],
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  if (data.author!.username != Utilitas.currentUser['username'])
+                  OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(kToolbarHeight, kToolbarHeight/2),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      side: BorderSide(
+                        width: .8,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
                     ),
+                    child: Text('Follow',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        )),
                   ),
                 ],
               ),
             ],
           ),
-          Icon(
-            Icons.more_vert,
-            color: color ?? Theme.of(context).colorScheme.primary,
-            shadows: [
-              Shadow(
-                  offset: const Offset(.5, .5),
-                  blurRadius: 1.0,
-                  color: isVideo
-                      ? Colors.grey.withOpacity(.5)
-                      : Theme.of(context).colorScheme.onPrimary),
-              Shadow(
-                  offset: const Offset(.5, .5),
-                  blurRadius: 1.0,
-                  color: isVideo
-                      ? Colors.grey.withOpacity(.5)
-                      : Theme.of(context).colorScheme.onPrimary),
-            ],
-          )
+          if (moreMenus)
+            Icon(
+              Icons.more_vert,
+              color: color ?? Theme.of(context).colorScheme.primary,
+              shadows: [
+                Shadow(
+                    offset: const Offset(.5, .5),
+                    blurRadius: 1.0,
+                    color: isVideo
+                        ? Colors.grey.withOpacity(.5)
+                        : Theme.of(context).colorScheme.onPrimary),
+                Shadow(
+                    offset: const Offset(.5, .5),
+                    blurRadius: 1.0,
+                    color: isVideo
+                        ? Colors.grey.withOpacity(.5)
+                        : Theme.of(context).colorScheme.onPrimary),
+              ],
+            )
         ],
       ),
     );

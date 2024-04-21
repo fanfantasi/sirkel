@@ -54,9 +54,6 @@ class _CameraPageState extends State<CameraPage> {
   @override
   void initState() {
     MyAudioService.instance.stop();
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      globalChewie?.pause();
-    });
 
     super.initState();
   }
@@ -532,7 +529,7 @@ class _CameraPageState extends State<CameraPage> {
         musicSelected = result;
       });
 
-      final String soundPath = '${Config.baseUrlAudio}${result?.file ?? ''}';
+      final String soundPath = '${Configs.baseUrlAudio}${result?.file ?? ''}';
       await MyAudioService.instance.play(
         path: soundPath,
         mute: false,

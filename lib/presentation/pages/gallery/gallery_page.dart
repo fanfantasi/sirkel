@@ -211,36 +211,33 @@ class _GalleryPageState extends State<GalleryPage> {
                   child: RepaintBoundary(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4.0),
-                      child: Hero(
-                        tag: 'image-${entity.id}',
-                        child: ImageItemWidget(
-                          key: ValueKey<int>(index),
-                          entity: entity,
-                          onTap: () async {
-                            if (selecteds.isNotEmpty) {
-                              if (entity.type == AssetType.image) {
-                                onSelectItem(entity);
-                              } else {
-                                if (entity.type == AssetType.video) {
-                                  Fluttertoast.showToast(
-                                      msg: 'Can\'t selected file video');
-                                } else if (entity.type == AssetType.audio) {
-                                  Fluttertoast.showToast(
-                                      msg: 'Can\'t selected file audio');
-                                }
-                              }
-                            } else {
-                              if (!mounted) return;
-                              Navigator.of(context).pop([entity]);
-                            }
-                          },
-                          onLongPress: () {
+                      child: ImageItemWidget(
+                        key: ValueKey<int>(index),
+                        entity: entity,
+                        onTap: () async {
+                          if (selecteds.isNotEmpty) {
                             if (entity.type == AssetType.image) {
                               onSelectItem(entity);
-                              isMulti.value = true;
+                            } else {
+                              if (entity.type == AssetType.video) {
+                                Fluttertoast.showToast(
+                                    msg: 'Can\'t selected file video');
+                              } else if (entity.type == AssetType.audio) {
+                                Fluttertoast.showToast(
+                                    msg: 'Can\'t selected file audio');
+                              }
                             }
-                          },
-                        ),
+                          } else {
+                            if (!mounted) return;
+                            Navigator.of(context).pop([entity]);
+                          }
+                        },
+                        onLongPress: () {
+                          if (entity.type == AssetType.image) {
+                            onSelectItem(entity);
+                            isMulti.value = true;
+                          }
+                        },
                       ),
                     ),
                   ),

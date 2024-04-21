@@ -15,6 +15,7 @@ extension StringExtension on String {
       return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
     }
 
+
     String extentionfile(){
       if (this == 'mp4' || this == 'mov' || this == 'avi' || this == 'mpeg' || this == 'mkv'){
         return 'video';

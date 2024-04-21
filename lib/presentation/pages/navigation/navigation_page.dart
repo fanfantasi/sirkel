@@ -1,19 +1,20 @@
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:screenshare/core/utils/audio_service.dart';
+import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/core/utils/headers.dart';
 import 'package:screenshare/core/utils/utils.dart';
+import 'package:screenshare/core/widgets/custom_navbar.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
-import 'package:screenshare/presentation/bloc/navigation/navigation_cubit.dart';
-import 'package:screenshare/presentation/pages/camera/camera_page.dart';
-import 'package:screenshare/presentation/pages/circle/circle_page.dart';
-import 'package:screenshare/presentation/pages/profile/profile_page.dart';
-import 'package:screenshare/presentation/pages/search/search_page.dart';
-import '../home/home_page.dart';
+import 'package:screenshare/presentation/pages/auth/auth_page.dart';
+import 'package:screenshare/presentation/pages/home/home_page.dart';
+
+import '../camera/camera_page.dart';
+import '../circle/circle_page.dart';
+import '../profile/profile_page.dart';
+import '../search/search_page.dart';
 
 class NavigationPage extends StatefulWidget {
   const NavigationPage({super.key});
@@ -23,69 +24,56 @@ class NavigationPage extends StatefulWidget {
 }
 
 class _NavigationPageState extends State<NavigationPage> {
-  GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
+  late PersistentTabController controller;
+  int currentRoute = 0;
   final ValueNotifier<String> avatar = ValueNotifier<String>('');
-  int pageindex = 0;
-  bool jumpToTop = false;
-  final tabs = [
-    const HomePage(),
-    const CirclePage(),
-    const CameraPage(),
-    const SearchPage(),
-    const ProfilePage(),
-  ];
 
   @override
   void initState() {
+    super.initState();
+    controller = PersistentTabController(initialIndex: currentRoute);
     WidgetsBinding.instance.addPostFrameCallback((v) async {
       avatar.value = await Utils.avatar();
-      Config.scrollControllerHome.addListener(() async {
-        if (Config.scrollControllerHome.position.pixels >= 100.0) {
-          if (pageindex == 0){
+      Configs.scrollControllerHome.addListener(() async {
+        Utilitas.scrollUp =
+            Configs.scrollControllerHome.position.userScrollDirection ==
+                ScrollDirection.forward;
+        Utilitas.scrollDown =
+            Configs.scrollControllerHome.position.userScrollDirection ==
+                ScrollDirection.reverse;
+        if (Configs.scrollControllerHome.position.pixels >= 100.0) {
+          if (currentRoute == 0) {
             if (mounted) {
               setState(() {
-                jumpToTop = true;
+                Utilitas.jumpToTop = true;
               });
             }
-          }else{
+          } else {
             if (mounted) {
               setState(() {
-                jumpToTop = false;
+                Utilitas.jumpToTop = false;
               });
             }
           }
         }
         onScrollListener();
       });
-      Config.scrollControllerHome.position.isScrollingNotifier.addListener(() {
-        if(!Config.scrollControllerHome.position.isScrollingNotifier.value) {
-          setState(() {
-            Utilitas.scrolling =  'scroll is stopped';
-          });
-        } else {
-          setState(() {
-            Utilitas.scrolling =  'scroll is started';
-          });
-        }
-      });
     });
-    super.initState();
   }
 
-  
   void _scrollTop() async {
-    MyAudioService.instance.stop();
-    await Config.scrollControllerHome.animateTo(0, duration: const Duration(milliseconds: 300),
-    curve: Curves.easeIn);
-    Config.scrollControllerHome.jumpTo(0.0);
+    await Configs.scrollControllerHome.animateTo(0,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
+    Configs.scrollControllerHome.jumpTo(0.0);
     setState(() {
-      jumpToTop = false;
+      Utilitas.jumpToTop = false;
     });
   }
 
   void onScrollListener() async {
-    if (Config.scrollControllerHome.position.pixels >=
-        Config.scrollControllerHome.position.maxScrollExtent && !Utilitas.isLastPage) {
+    if (Configs.scrollControllerHome.position.pixels >=
+            Configs.scrollControllerHome.position.maxScrollExtent &&
+        !Utilitas.isLastPage) {
       if (Utilitas.isLoadMore) {
         return;
       }
@@ -100,7 +88,7 @@ class _NavigationPageState extends State<NavigationPage> {
         }
         Utilitas.page++;
         await onLoadmore();
-      }else{
+      } else {
         Future.delayed(const Duration(seconds: 1), () async {
           setState(() {
             Utilitas.isLoadMore = false;
@@ -121,104 +109,110 @@ class _NavigationPageState extends State<NavigationPage> {
       });
     });
   }
+  
+  List<Widget> _buildScreens() {
+    return const [
+      HomePage(),
+      CirclePage(),
+      CameraPage(),
+      SearchPage(),
+      ProfilePage(),
+    ];
+  }
 
-  List<BottomNavigationBarItem> getNavigation(index) {
+  List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
-      BottomNavigationBarItem(
+      PersistentBottomNavBarItem(
         icon: Image.asset(
-          index == 0 ? 'assets/icons/ic-home-select.png' : 'assets/icons/ic-home.png',
+          currentRoute == 0
+              ? 'assets/icons/ic-home-select.png'
+              : 'assets/icons/ic-home.png',
           width: 24,
           height: 24,
         ),
-        label: 'Home',
       ),
-      BottomNavigationBarItem(
+      PersistentBottomNavBarItem(
         icon: Image.asset(
-          index == 1 ? 'assets/icons/ic-circle-select.png' : 'assets/icons/ic-circle.png',
+          currentRoute == 1
+              ? 'assets/icons/ic-circle-select.png'
+              : 'assets/icons/ic-circle.png',
           width: 24,
           height: 24,
         ),
-        label: 'Sirkel',
       ),
-      BottomNavigationBarItem(
+      PersistentBottomNavBarItem(
         icon: Image.asset(
           'assets/icons/ic-post-content.png',
           width: 24,
           height: 24,
         ),
-        label: 'Screen Share',
       ),
-      BottomNavigationBarItem(
+      PersistentBottomNavBarItem(
         icon: Image.asset(
-          index == 3 ? 'assets/icons/ic-search-select.png' : 'assets/icons/ic-search.png',
+          currentRoute == 3
+              ? 'assets/icons/ic-search-select.png'
+              : 'assets/icons/ic-search.png',
           width: 24,
           height: 24,
         ),
-        label: 'Search',
       ),
-      BottomNavigationBarItem(
+      PersistentBottomNavBarItem(
         icon: Image.asset(
           'assets/icons/ic-add-user.png',
           width: 24,
           height: 24,
         ),
-        label: 'User',
       ),
     ];
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: scaffoldKey,
-      body: tabs[pageindex],
-      bottomNavigationBar: BlocBuilder<NavigationCubit, NavigationState>(
-          buildWhen: (previous, current) =>
-              previous.index != current.index,
-          builder: (context, state) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(color: Theme.of(context).primaryColor),
-                ],
-              ),
-              child: BottomNavigationBar(
-                type: BottomNavigationBarType.fixed,
-                selectedItemColor: Colors.black54,
-                selectedLabelStyle: GoogleFonts.openSans(fontSize: 12),
-                unselectedLabelStyle: GoogleFonts.openSans(fontSize: 12),
-                elevation: 0,
-                showSelectedLabels: false,
-                showUnselectedLabels: false,
-                currentIndex: state.index,
-                onTap: (index) async {
-                  if (index == 4){
-                    bool res = await Config().handleEventLoginBool(context);
-                    if (!mounted) return;
-                    if (!res) Navigator.pushNamed(context, '/signin');
-                  }
-
-                  if (index == 2){
-                    await availableCameras().then((value) => Navigator.pushNamed(context, Routes.cameraPage, arguments: value));
-                  }
-
-                  if (jumpToTop && index == 0){
-                    _scrollTop();
-                  }
-                  
-                  if (index != 2){
-                    setState(() {
-                      pageindex = index;
-                      Utilitas.scrolling = 'scroll is stopped';
-                    });
-                    if (!mounted) return;
-                    context.read<NavigationCubit>().getNavBarItem(index);
-                  }
-                },
-                items: getNavigation(state.index),
-              ),
-            );
-          }),
+      body: PersistentTabView(
+        context,
+        controller: controller,
+        screens: _buildScreens(),
+        items: _navBarsItems(),
+        confineInSafeArea: true,
+        backgroundColor: Colors.white, // Default is Colors.white.
+        handleAndroidBackButtonPress: true, // Default is true.
+        resizeToAvoidBottomInset: true,
+        stateManagement: true, 
+        hideNavigationBarWhenKeyboardShows: true,
+        popAllScreensOnTapOfSelectedTab: true,
+        popActionScreens: PopActionScreensType.all,
+        itemAnimationProperties: const ItemAnimationProperties(
+          duration: Duration(milliseconds: 200),
+          curve: Curves.ease,
+        ),
+        screenTransitionAnimation: const ScreenTransitionAnimation(
+          animateTabTransition: true,
+          curve: Curves.ease,
+          duration: Duration(milliseconds: 200),
+        ),
+        
+        navBarStyle: NavBarStyle.simple,
+        onItemSelected: (index) async {
+          if (Utilitas.jumpToTop && index == 0) {
+            _scrollTop();
+          }
+          // print(Utilitas.jumpToTop);
+          if (index == 4) {
+            bool res = await Configs().handleEventLoginBool(context);
+            if (!mounted) return;
+            if (!res) {
+              PersistentNavBarNavigator.pushNewScreenWithRouteSettings(context,
+                  screen: const SignInPage(),
+                  settings: const RouteSettings(name: Routes.signInPage),
+                  withNavBar: false);
+            }
+          }
+          setState(() {
+            currentRoute = index;
+          });
+        },
+      ),
     );
   }
 }

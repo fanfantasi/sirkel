@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:screenshare/app.dart';
 import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/firebase_options.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
@@ -25,7 +26,7 @@ import 'presentation/routes/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MapBoxSearch.init(Config.mapBox);
+  MapBoxSearch.init(Configs.mapBox);
   await di.init();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -72,7 +73,8 @@ class MyApp extends StatelessWidget {
             themeMode: context
                 .select((ThemeCubit themeCubit) => themeCubit.state.themeMode),
             onGenerateRoute: RouteGenerator.generateRoute,
-            initialRoute: Routes.root,
+            // initialRoute: Routes.root,
+            // home: const AppPage(),
           );
         },
       )

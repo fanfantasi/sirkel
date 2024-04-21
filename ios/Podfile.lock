@@ -1,9 +1,4 @@
 PODS:
-  - Alamofire (5.4.4)
-  - AnyCodable-FlightSchool (0.6.7)
-  - ApiVideoUploader (1.2.2):
-    - Alamofire (~> 5.4.3)
-    - AnyCodable-FlightSchool (~> 0.6.1)
   - AppAuth (1.7.4):
     - AppAuth/Core (= 1.7.4)
     - AppAuth/ExternalUserAgent (= 1.7.4)
@@ -144,15 +139,9 @@ PODS:
     - Flutter
     - FlutterMacOS
   - Toast (4.1.1)
-  - video_player_avfoundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
   - video_thumbnail (0.0.1):
     - Flutter
     - libwebp
-  - video_uploader (1.0.0):
-    - ApiVideoUploader (= 1.2.2)
-    - Flutter
   - wakelock (0.0.1):
     - Flutter
 
@@ -175,16 +164,11 @@ DEPENDENCIES:
   - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite (from `.symlinks/plugins/sqflite/darwin`)
-  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
   - video_thumbnail (from `.symlinks/plugins/video_thumbnail/ios`)
-  - video_uploader (from `.symlinks/plugins/video_uploader/ios`)
   - wakelock (from `.symlinks/plugins/wakelock/ios`)
 
 SPEC REPOS:
   trunk:
-    - Alamofire
-    - AnyCodable-FlightSchool
-    - ApiVideoUploader
     - AppAuth
     - Cache
     - ffmpeg-kit-ios-https
@@ -244,19 +228,12 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sqflite:
     :path: ".symlinks/plugins/sqflite/darwin"
-  video_player_avfoundation:
-    :path: ".symlinks/plugins/video_player_avfoundation/darwin"
   video_thumbnail:
     :path: ".symlinks/plugins/video_thumbnail/ios"
-  video_uploader:
-    :path: ".symlinks/plugins/video_uploader/ios"
   wakelock:
     :path: ".symlinks/plugins/wakelock/ios"
 
 SPEC CHECKSUMS:
-  Alamofire: f3b09a368f1582ab751b3fff5460276e0d2cf5c9
-  AnyCodable-FlightSchool: 261cbe76757802b17d471b9059b21e6fa5edf57b
-  ApiVideoUploader: e04ec826bdb86c6980d13add00f61903cd9fa4aa
   AppAuth: 182c5b88630569df5acb672720534756c29b3358
   audio_session: 4f3e461722055d21515cf3261b64c973c062f345
   better_player: 2406bfe8175203c7a46fa15f9d778d73b12e1646
@@ -296,9 +273,7 @@ SPEC CHECKSUMS:
   shared_preferences_foundation: b4c3b4cddf1c21f02770737f147a3f5da9d39695
   sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
   Toast: 1f5ea13423a1e6674c4abdac5be53587ae481c4e
-  video_player_avfoundation: e9e6f9cae7d7a6d9b43519b0aab382bca60fcfd1
   video_thumbnail: c4e2a3c539e247d4de13cd545344fd2d26ffafd1
-  video_uploader: c411084e5930d01a166ee5ed853702acef2f3ee0
   wakelock: d0fc7c864128eac40eba1617cb5264d9c940b46f
 
 PODFILE CHECKSUM: 70d9d25280d0dd177a5f637cdb0f0b0b12c6a189

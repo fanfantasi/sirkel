@@ -12,8 +12,6 @@ class HeadersToken {
     return 'Bearer ${prefs.getString(Dbkeys.accessToken)}';
     // return 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWY4NzlhODI0YTRhOTE4ZDllZDEwMzMiLCJpYXQiOjE3MTA3ODI5NjYsImV4cCI6MTcxMTM4Nzc2Nn0.VSUgEB-5g5tNi52lYflNXOCYydmL5vOg4dHxVfFKEMU';
   }
-
-  
 }
 
 class Utils{
@@ -39,7 +37,7 @@ class Utils{
       if (avatar.substring(0, 3) == 'http'){
         return avatar;
       }else{
-        return '${Config.baseUrlPic}${data?.author?.id??''}/${data?.author?.avatar??''}';
+        return '${Configs.baseUrlPic}${data?.author?.id??''}/${data?.author?.avatar??''}';
       }
     }
     return '';

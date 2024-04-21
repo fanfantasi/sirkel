@@ -67,7 +67,7 @@ class _MusicWidgetState extends State<MusicWidget> {
       for (var e in resultMusic) {
         e.play = false;
       }
-      final String soundPath = '${Config.baseUrlAudio}${resultMusic[index].file ?? ''}';
+      final String soundPath = '${Configs.baseUrlAudio}${resultMusic[index].file ?? ''}';
       await MyAudioService.instance.play(
         path: soundPath,
         mute: false,

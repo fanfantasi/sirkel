@@ -1,5 +1,6 @@
 class Routes {
   static const root = '/';
+  static const splashScreen = '/splashscreen';
   static const signInPage = '/signin';
   static const passwordPage = '/password';
   static const registerPage = '/register';
@@ -7,6 +8,8 @@ class Routes {
   static const forgotPage = '/forgot';
 
   static const navigationPage = '/navigation';
+  static const homePage = '/home';
+  static const sirkelPage = '/sirkel';
 
   static const fullscreenPage = '/fullscreen-page';
   static const profilePage = '/profile-page';

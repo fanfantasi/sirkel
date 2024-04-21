@@ -1,0 +1,65 @@
+SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (BuildContext context, int index) {
+                          if (result.length == index) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 16, bottom: 16),
+                              child: Center(
+                                child: LoadingWidget(
+                                  leftcolor: Theme.of(context).primaryColor,
+                                  rightcolor:
+                                      Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            );
+                          }
+
+                          return InViewNotifierWidget(
+                            id: '$index',
+                            builder: (BuildContext context, bool isInView,
+                                Widget? child) {
+                              bool isVideo = result[index]
+                                  .pic!
+                                  .where((e) =>
+                                      e.file!
+                                          .split('.')
+                                          .last
+                                          .toLowerCase()
+                                          .extentionfile() ==
+                                      'video')
+                                  .isNotEmpty;
+                              if (isVideo) {
+                                return VisibilityDetector(
+                                  key: Key(index.toString()),
+                                  onVisibilityChanged: (visibilityInfo){
+                                    var visiblePercentage = visibilityInfo.visibleFraction * 100;
+                                    if (visiblePercentage > 76) {
+                                print(
+                                    'Visible Detector  $index $visiblePercentage $isVideo');
+                                    }
+                                  },
+                                  child: VideoPlayerWidget(
+                                    datas: result,
+                                    index: index,
+                                    isFullScreen: false,
+                                    play: isInView,
+                                    resumed: false,
+                                  ),
+                                );
+                              } else {
+                                return PicturePlayerWidget(
+                                  data: result[index],
+                                  index: index,
+                                  play: isInView,
+                                  isFullScreen: false,
+                                );
+                              }
+                            },
+                          );
+                        },
+                        childCount: Utilitas.isLoadMore
+                            ? result.length + 1
+                            : result.length,
+                      ),
+                    ),

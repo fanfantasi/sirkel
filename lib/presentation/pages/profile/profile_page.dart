@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/core/utils/headers.dart';
+import 'package:screenshare/presentation/pages/settings/setting_page.dart';
 
 import 'widgets/profile_widget.dart';
 
@@ -14,16 +16,15 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ValueNotifier<Map> localUser = ValueNotifier<Map>({});
-  
+
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((v) async { 
+    WidgetsBinding.instance.addPostFrameCallback((v) async {
       localUser.value = await Utils.user();
     });
     super.initState();
   }
 
-  
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Map>(
@@ -46,8 +47,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       width: 5,
                     ),
                     Text(
-                      '@${value['username']??''}',
-                      style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 20),
+                      '@${value['username'] ?? ''}',
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 20),
                     ),
                     const SizedBox(
                       width: 5,
@@ -62,20 +65,27 @@ class _ProfilePageState extends State<ProfilePage> {
                       'assets/svg/upload_icon.svg',
                       height: 23,
                       colorFilter: ColorFilter.mode(
-                        Theme.of(context).colorScheme.primary,
-                        BlendMode.srcIn),
+                          Theme.of(context).colorScheme.primary,
+                          BlendMode.srcIn),
                     ),
                     const SizedBox(
                       width: 20,
                     ),
                     GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, Routes.settingsPage),
+                      onTap: () {
+                        PersistentNavBarNavigator
+                            .pushNewScreenWithRouteSettings(context,
+                                screen: SettingPage(),
+                                settings:
+                                    RouteSettings(name: Routes.settingsPage),
+                                withNavBar: false);
+                      },
                       child: SvgPicture.asset(
                         'assets/svg/drawer_icon.svg',
                         height: 20,
                         colorFilter: ColorFilter.mode(
-                          Theme.of(context).colorScheme.primary,
-                          BlendMode.srcIn),
+                            Theme.of(context).colorScheme.primary,
+                            BlendMode.srcIn),
                       ),
                     ),
                     const SizedBox(
@@ -93,10 +103,12 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 children: [
                   const ProfileHeader(),
-                  TabBar(indicatorColor: Theme.of(context).colorScheme.primary, tabs: const [
-                    Tab(icon: Icon(Icons.grid_view_rounded)),
-                    Tab(icon: Icon(Icons.person_pin)),
-                  ]),
+                  TabBar(
+                      indicatorColor: Theme.of(context).colorScheme.primary,
+                      tabs: const [
+                        Tab(icon: Icon(Icons.grid_view_rounded)),
+                        Tab(icon: Icon(Icons.person_pin)),
+                      ]),
                 ],
               ),
             ),

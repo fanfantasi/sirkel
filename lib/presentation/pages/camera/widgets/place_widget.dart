@@ -33,7 +33,7 @@ class _PlaceWidgetState extends State<PlaceWidget> {
         isLoading = true;
       });
       SearchBoxAPI search = SearchBoxAPI(
-        apiKey: Config.mapBox,
+        apiKey: Configs.mapBox,
         limit: 10,
         country: "ID",
       );

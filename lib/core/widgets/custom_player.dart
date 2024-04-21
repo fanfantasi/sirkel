@@ -1,12 +1,15 @@
 import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:screenshare/core/widgets/loadingwidget.dart';
+import 'package:screenshare/core/widgets/smooth_video_progress_better.dart';
 
-import 'smooth_video_progress.dart';
+import 'smooth_video_progress_chewie.dart';
 
 class CustomPlayer extends StatelessWidget {
   final BetterPlayerController controller;
-  const CustomPlayer({super.key, required this.controller});
+  final bool isFullScreen;
+  const CustomPlayer({super.key, required this.controller, required this.isFullScreen});
 
   void _onTap() {
     controller.setControlsVisibility(true);
@@ -32,11 +35,9 @@ class CustomPlayer extends StatelessWidget {
   //     return '00:00';
   //   }
   // }
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: _controlVisibility,
       child: StreamBuilder(
         initialData: false,
         stream: controller.controlsVisibilityStream,
@@ -50,13 +51,25 @@ class CustomPlayer extends StatelessWidget {
                 builder: (context, value, child) {
                   // print(value);
                   if (value.isBuffering) {
-                    return const LoadingWidget(
-                      rightcolor: Colors.pink,
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/svg/sirkel.svg',
+                        ),
+                        LoadingWidget(
+                          rightcolor: Colors.pink,
+                        ),
+                        Text('Buffer', style: TextStyle(
+                          color: Colors.white
+                        ),)
+                      ],
                     );
                   }
                   return const SizedBox.shrink();
                 },
               )),
+              if (isFullScreen)
               Positioned(
                 child: AnimatedOpacity(
                   opacity: snapshot.data! ? 1.0 : 0.0,
@@ -80,43 +93,7 @@ class CustomPlayer extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: ValueListenableBuilder(
-                  valueListenable: controller.videoPlayerController!,
-                  builder: (context, value, child) {
-                    if (controller.videoPlayerController!.value.initialized) {
-                      return SmoothVideoProgress(
-                        controller: controller,
-                        builder: (context, position, duration, child) => Theme(
-                          data: ThemeData.from(
-                            colorScheme: ColorScheme.fromSeed(
-                                seedColor: Theme.of(context).primaryColor),
-                          ),
-                          child: SliderTheme(
-                            data: SliderThemeData(
-                                trackHeight: 1,
-                                trackShape: CustomTrackShape(),
-                                thumbShape: SliderComponentShape.noThumb),
-                            child: Slider(
-                              onChangeStart: (_) => controller.pause(),
-                              onChangeEnd: (_) => controller.play(),
-                              onChanged: (value) => controller.seekTo(
-                                  Duration(milliseconds: value.toInt())),
-                              value: position.inMilliseconds.toDouble(),
-                              min: 0,
-                              max: duration.inMilliseconds.toDouble(),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ),
+              
             ],
           );
         },

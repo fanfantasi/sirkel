@@ -12,7 +12,7 @@ class ApiService {
   Dio get dio => _dio();
   Dio _dio() {
     final options = BaseOptions(
-      baseUrl: Config.baseUrl,
+      baseUrl: Configs.baseUrl,
       connectTimeout: const Duration(milliseconds: 5000),
       receiveTimeout: const Duration(milliseconds: 10000),
       contentType: "application/json;charset=utf-8",

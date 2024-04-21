@@ -22,7 +22,6 @@ class _CircleImageAnimationState extends State<CircleImageAnimation>
     );
     _controller.forward();
     _controller.repeat();
-
     super.initState();
   }
 

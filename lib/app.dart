@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:screenshare/core/utils/utils.dart';
+
+import 'core/utils/constants.dart';
+import 'core/utils/headers.dart';
 
 class AppPage extends StatefulWidget {
   const AppPage({super.key});
@@ -11,7 +15,8 @@ class AppPage extends StatefulWidget {
 class _AppPageState extends State<AppPage> {
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((v){
+    WidgetsBinding.instance.addPostFrameCallback((v) async {
+      Utilitas.currentUser = await Utils.user();
       initialPage();
     });
     
@@ -20,7 +25,7 @@ class _AppPageState extends State<AppPage> {
 
   void initialPage() async {
     Future.delayed(const Duration(seconds: 1), () {
-      Navigator.pushNamedAndRemoveUntil(context, '/navigation', (route) => false);
+      Navigator.pushNamedAndRemoveUntil(context, Routes.navigationPage, (route) => false);
     });
   }
 

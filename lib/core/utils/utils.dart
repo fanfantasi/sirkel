@@ -7,4 +7,8 @@ class Utilitas {
   static bool isInitialPage = true;
   static bool isLastPage = false;
   static bool isLoadMore = false;
+  static bool scrollUp = false;
+  static bool scrollDown = true;
+  static Map currentUser = {};
+  static bool jumpToTop = false;
 }

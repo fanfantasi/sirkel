@@ -6,17 +6,19 @@ import 'package:screenshare/app.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/presentation/pages/auth/auth_page.dart';
 import 'package:screenshare/presentation/pages/camera/camera_page.dart';
-import 'package:screenshare/presentation/pages/camera/preview_page.dart';
+import 'package:screenshare/presentation/pages/circle/circle_page.dart';
 import 'package:screenshare/presentation/pages/gallery/gallery_page.dart';
+import 'package:screenshare/presentation/pages/home/fullscreen_page.dart';
+import 'package:screenshare/presentation/pages/home/home_page.dart';
 import 'package:screenshare/presentation/pages/navigation/navigation_page.dart';
 import 'package:screenshare/presentation/pages/profile/profile_page.dart';
 import 'package:screenshare/presentation/pages/search/search_page.dart';
 import 'package:screenshare/presentation/pages/settings/setting_page.dart';
 
-import '../pages/home/widgers/fullscreen_page.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
+    print('Navigation ${settings.name}');
     switch (settings.name) {
       case Routes.root:
         return MaterialPageRoute(
@@ -25,7 +27,19 @@ class RouteGenerator {
       case Routes.signInPage:
         return CupertinoPageRoute(
             builder: (_) => const SignInPage(), settings: settings);
-            
+
+      case Routes.navigationPage:
+        return MaterialPageRoute(
+            builder: (_) => const NavigationPage(), settings: settings);
+
+      case Routes.homePage:
+        return MaterialPageRoute(
+            builder: (_) => const HomePage(), settings: settings);
+
+      case Routes.sirkelPage:
+        return MaterialPageRoute(
+            builder: (_) => const CirclePage(), settings: settings);
+
       case Routes.profilePage:
         return CupertinoPageRoute(
             builder: (_) => const ProfilePage(), settings: settings);
@@ -34,34 +48,30 @@ class RouteGenerator {
         return CupertinoPageRoute(
             builder: (_) => const SettingPage(), settings: settings);
 
-      case Routes.navigationPage:
-        return MaterialPageRoute(
-            builder: (_) => const NavigationPage(), settings: settings);
-      
       case Routes.fullscreenPage:
         return MaterialPageRoute(
             builder: (_) => const FullscreenPage(), settings: settings);
       
-      case Routes.cameraPage:
-        return MaterialPageRoute(
-            builder: (_) => const CameraPage(), settings: settings);
+      // case Routes.cameraPage:
+      //   return MaterialPageRoute(
+      //       builder: (_) => const CameraPage(), settings: settings);
 
-      case Routes.previewPicturePage:
-        return MaterialPageRoute(
-            builder: (_) => const PreviewPictureage(), settings: settings);
-      case Routes.galleryPage:
-        return MaterialPageRoute(
-            builder: (_) => const GalleryPage(), settings: settings);
-      case Routes.searchPage:
-        return MaterialPageRoute(
-            builder: (_) => const SearchPage(), settings: settings);
+      // case Routes.previewPicturePage:
+      //   return MaterialPageRoute(
+      //       builder: (_) => const PreviewPictureage(), settings: settings);
+      // case Routes.galleryPage:
+      //   return MaterialPageRoute(
+      //       builder: (_) => const GalleryPage(), settings: settings);
+      // case Routes.searchPage:
+      //   return MaterialPageRoute(
+      //       builder: (_) => const SearchPage(), settings: settings);
 
       default:
-        return _errorRoute();
+        return errorRoute();
     }
   }
 
-  static Route<dynamic> _errorRoute() {
+  static Route<dynamic> errorRoute() {
     return MaterialPageRoute(builder: (context) {
       return Scaffold(
         appBar: AppBar(

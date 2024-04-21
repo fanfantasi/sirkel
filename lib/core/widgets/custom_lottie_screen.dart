@@ -35,16 +35,14 @@ class _CustomLottieScreenState extends State<CustomLottieScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      child: Lottie.asset(
-        "assets/lottie/liked.json",
-        controller: _controller,
-        onLoaded: (composition) {
-          _controller.duration = composition.duration;
-          _controller.forward().whenComplete(() => widget.onAnimationFinished());
-        },
-        repeat: true,
-      ),
+    return Lottie.asset(
+      "assets/lottie/liked.json",
+      controller: _controller,
+      onLoaded: (composition) {
+        _controller.duration = composition.duration;
+        _controller.forward().whenComplete(() => widget.onAnimationFinished());
+      },
+      repeat: true,
     );
   }
 }

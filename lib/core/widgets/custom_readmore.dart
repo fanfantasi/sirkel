@@ -287,7 +287,7 @@ class _CustomReadmoreState extends State<CustomReadmore> {
         } else if (firstChar == '#' && splitDesc[i].length > 1) {
           final lenght = splitDesc[i].length;
           final content = splitDesc[i].substring(1, lenght);
-          final isSpecialChar = Config().charForTag(content);
+          final isSpecialChar = Configs().charForTag(content);
           if (!isSpecialChar) {
             tempDesc = '$tempDesc ${splitDesc[i]}';
             if (i == (splitDesc.length - 1)) {
