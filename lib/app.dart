@@ -34,8 +34,8 @@ class _AppPageState extends State<AppPage> {
     return Scaffold(
       body: Align(
         alignment: Alignment.center,
-        child: Lottie.asset('assets/lottie/love-love.json',
-        alignment: Alignment.centerLeft, fit: BoxFit.cover),
+        child: Image.asset('assets/icons/sirkel.png',
+        alignment: Alignment.centerLeft, fit: BoxFit.cover, height: MediaQuery.of(context).size.width * .5),
       ),
     );
   }

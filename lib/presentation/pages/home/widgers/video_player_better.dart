@@ -7,13 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/core/utils/extentions.dart';
 import 'package:screenshare/core/utils/utils.dart';
-import 'package:screenshare/core/widgets/circle_image_animation.dart';
 import 'package:screenshare/core/widgets/custom_lottie_screen.dart';
 import 'package:screenshare/core/widgets/custom_player.dart';
 import 'package:screenshare/core/widgets/custom_readmore.dart';
@@ -84,6 +82,7 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
         customControlsBuilder: (controller, onPlayerVisibilityChanged) {
           return CustomPlayer(
               isFullScreen: widget.isFullScreen,
+              data: data,
               controller: _betterPlayerController);
         },
       ),
@@ -104,9 +103,9 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
             CachedNetworkImage(
               key: Key(data!.id.toString()),
               imageUrl:
-                  '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}',
+                  '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}?tn=320',
               fit: BoxFit.cover,
-              cacheKey: data!.pic!.first.thumbnail ?? '',
+              cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
               placeholder: (context, url) {
                 return LoadingWidget(
                   leftcolor: Theme.of(context).primaryColor,
@@ -135,8 +134,10 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
       await _betterPlayerController.setupDataSource(dataSource);
       if (widget.play) {
         _betterPlayerController.play();
-        _betterPlayerController
-            .seekTo(widget.positionVideo! - Duration(seconds: 2));
+        if (widget.positionVideo != null){
+          _betterPlayerController.seekTo(widget.positionVideo! - const Duration(seconds: 1));
+        }
+        
         isPlaying.value = true;
       }
     }
@@ -152,13 +153,7 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
       }
     }
 
-    // if (data!.music != null) {
-    //   if (Utilitas.isMute) {
-    //     _betterPlayerController.setVolume(1.0);
-    //   } else {
-    //     _betterPlayerController.setVolume(0.0);
-    //   }
-    // }
+
     super.didUpdateWidget(oldWidget);
   }
 
@@ -413,8 +408,8 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                     builder: (context, value, _) {
                       return SvgPicture.asset(
                         data!.liked ?? false
-                            ? 'assets/svg/loved_icon.svg'
-                            : 'assets/svg/love_icon.svg',
+                            ? 'assets/svg/liked.svg'
+                            : 'assets/svg/like.svg',
                         height: 25,
                         colorFilter: data!.liked ?? false
                             ? null
@@ -428,7 +423,7 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                     width: 20,
                   ),
                   SvgPicture.asset(
-                    'assets/svg/comment_icon.svg',
+                    'assets/svg/comment.svg',
                     height: 25,
                     colorFilter: ColorFilter.mode(
                         Theme.of(context).colorScheme.primary, BlendMode.srcIn),
@@ -437,7 +432,7 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                     width: 20,
                   ),
                   SvgPicture.asset(
-                    'assets/svg/message_icon.svg',
+                    'assets/svg/share.svg',
                     height: 25,
                     colorFilter: ColorFilter.mode(
                         Theme.of(context).colorScheme.primary, BlendMode.srcIn),
@@ -445,7 +440,7 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                 ],
               ),
               SvgPicture.asset(
-                'assets/svg/favorite-icon.svg',
+                'assets/svg/bookmark.svg',
                 height: 25,
                 colorFilter: ColorFilter.mode(
                     Theme.of(context).colorScheme.primary, BlendMode.srcIn),
@@ -590,21 +585,9 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
 
                 isVisibility.value = true;
               },
-              onDoubleTapDown: (details) {
-                var position = details.localPosition;
-                positionDxDy = position;
-                isLiked.value = true;
-
-                Future.delayed(const Duration(milliseconds: 1200), () {
-                  isLiked.value = false;
-                  likeAddTapScreen(data!);
-                });
-              },
               child: ValueListenableBuilder<bool>(
                 valueListenable: isPlaying,
                 builder: (context, value, child) {
-                  print(
-                      'Better Player ${_betterPlayerController.isVideoInitialized()!}');
                   return Transform.scale(
                     scale: getScale(),
                     child: BetterPlayer(controller: _betterPlayerController),
@@ -612,42 +595,6 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                 },
               ),
             ),
-            if (_betterPlayerController.isVideoInitialized()!)
-              Positioned(
-                child: StreamBuilder(
-                  initialData: false,
-                  stream: _betterPlayerController.controlsVisibilityStream,
-                  builder: (context, snapshot) {
-                    return AnimatedOpacity(
-                      opacity: snapshot.data ?? false ? 1.0 : 0.0,
-                      duration: const Duration(seconds: 1),
-                      child: Center(
-                        child: Container(
-                          height: 52,
-                          width: 52,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(.5),
-                            shape: BoxShape.circle,
-                          ),
-                          child: _betterPlayerController.isPlaying()!
-                              ? const Icon(
-                                  Icons.pause,
-                                  color: Colors.white,
-                                  size: 32,
-                                )
-                              : const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
             Positioned(
               bottom: 0,
               left: 0,
@@ -687,183 +634,183 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                 },
               ),
             ),
-            ValueListenableBuilder<bool>(
-              valueListenable: isVisibility,
-              builder: (context, value, child) => AnimatedOpacity(
-                opacity: value ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 15,
-                        ),
-                        child: Column(
-                          children: [
-                            ValueListenableBuilder<bool>(
-                              valueListenable: isData,
-                              builder: (context, value, _) {
-                                return Column(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        print('liked icon');
-                                      },
-                                      child: SvgPicture.asset(
-                                        data!.liked ?? false
-                                            ? 'assets/svg/loved_icon.svg'
-                                            : 'assets/svg/love_icon.svg',
-                                        height: 25,
-                                        colorFilter: data!.liked ?? false
-                                            ? null
-                                            : const ColorFilter.mode(
-                                                Colors.white, BlendMode.srcIn),
-                                      ),
-                                    ),
-                                    Text(
-                                      data!.counting.likes.formatNumber(),
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        shadows: [
-                                          Shadow(
-                                            offset: const Offset(.5, .5),
-                                            blurRadius: 1.0,
-                                            color: Colors.grey.withOpacity(.5),
-                                          ),
-                                          Shadow(
-                                              offset: const Offset(.5, .5),
-                                              blurRadius: 1.0,
-                                              color:
-                                                  Colors.grey.withOpacity(.5)),
-                                        ],
-                                      ),
-                                    )
-                                  ],
-                                );
-                              },
-                            ),
-                            const SizedBox(
-                              height: 20,
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                print('Click Comment');
-                              },
-                              child: SvgPicture.asset(
-                                'assets/svg/comment_icon.svg',
-                                height: 28,
-                                colorFilter: ColorFilter.mode(
-                                    Theme.of(context).colorScheme.onPrimary,
-                                    BlendMode.srcIn),
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 7,
-                            ),
-                            Text(
-                              '${data!.counting.comments}',
-                              style: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14),
-                            ),
-                            const SizedBox(
-                              height: 20,
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                print('Click Share');
-                              },
-                              child: SvgPicture.asset(
-                                'assets/svg/message_icon.svg',
-                                height: 28,
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 7,
-                            ),
-                            Text(
-                              '${data!.counting.share}',
-                              style: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14),
-                            ),
-                            const SizedBox(
-                              height: 20,
-                            ),
-                            IconButton(
-                                onPressed: () {
-                                  print('Click More Icon');
-                                },
-                                icon: Icon(
-                                  Icons.more_vert,
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  size: 25,
-                                )),
-                            if (data!.music != null)
-                              Column(
-                                children: [
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(2.0),
-                                    child: SizedBox(
-                                      height: 42,
-                                      width: 42,
-                                      child: CircleImageAnimation(
-                                        child: SvgPicture.asset(
-                                          'assets/svg/disc.svg',
-                                          // height: 28,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            const SizedBox(
-                              height: 20,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (data!.music != null)
-                      Positioned(
-                        right: -32,
-                        bottom: -10,
-                        child: Lottie.asset(
-                          "assets/lottie/nada.json",
-                          repeat: true,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            ValueListenableBuilder<bool>(
-              valueListenable: isLiked,
-              builder: (context, value, child) {
-                return isLiked.value
-                    ? Positioned(
-                        top: positionDxDy.dy - 110,
-                        left: positionDxDy.dx - 110,
-                        child: SizedBox(
-                            height: 220,
-                            child: CustomLottieScreen(
-                              onAnimationFinished: () {},
-                            )),
-                      )
-                    : const SizedBox.shrink();
-              },
-            ),
+            // ValueListenableBuilder<bool>(
+            //   valueListenable: isVisibility,
+            //   builder: (context, value, child) => AnimatedOpacity(
+            //     opacity: value ? 1.0 : 0.0,
+            //     duration: const Duration(milliseconds: 300),
+            //     child: Stack(
+            //       children: [
+            //         Positioned(
+            //           right: 0,
+            //           bottom: 0,
+            //           child: Padding(
+            //             padding: const EdgeInsets.symmetric(
+            //               horizontal: 15,
+            //             ),
+            //             child: Column(
+            //               children: [
+            //                 ValueListenableBuilder<bool>(
+            //                   valueListenable: isData,
+            //                   builder: (context, value, _) {
+            //                     return Column(
+            //                       children: [
+            //                         GestureDetector(
+            //                           onTap: () {
+            //                             print('liked icon');
+            //                           },
+            //                           child: SvgPicture.asset(
+            //                             data!.liked ?? false
+            //                                 ? 'assets/svg/loved_icon.svg'
+            //                                 : 'assets/svg/love_icon.svg',
+            //                             height: 25,
+            //                             colorFilter: data!.liked ?? false
+            //                                 ? null
+            //                                 : const ColorFilter.mode(
+            //                                     Colors.white, BlendMode.srcIn),
+            //                           ),
+            //                         ),
+            //                         Text(
+            //                           data!.counting.likes.formatNumber(),
+            //                           style: TextStyle(
+            //                             color: Colors.white,
+            //                             shadows: [
+            //                               Shadow(
+            //                                 offset: const Offset(.5, .5),
+            //                                 blurRadius: 1.0,
+            //                                 color: Colors.grey.withOpacity(.5),
+            //                               ),
+            //                               Shadow(
+            //                                   offset: const Offset(.5, .5),
+            //                                   blurRadius: 1.0,
+            //                                   color:
+            //                                       Colors.grey.withOpacity(.5)),
+            //                             ],
+            //                           ),
+            //                         )
+            //                       ],
+            //                     );
+            //                   },
+            //                 ),
+            //                 const SizedBox(
+            //                   height: 20,
+            //                 ),
+            //                 GestureDetector(
+            //                   onTap: () {
+            //                     print('Click Comment');
+            //                   },
+            //                   child: SvgPicture.asset(
+            //                     'assets/svg/comment_icon.svg',
+            //                     height: 28,
+            //                     colorFilter: ColorFilter.mode(
+            //                         Theme.of(context).colorScheme.onPrimary,
+            //                         BlendMode.srcIn),
+            //                   ),
+            //                 ),
+            //                 const SizedBox(
+            //                   height: 7,
+            //                 ),
+            //                 Text(
+            //                   '${data!.counting.comments}',
+            //                   style: TextStyle(
+            //                       color:
+            //                           Theme.of(context).colorScheme.onPrimary,
+            //                       fontWeight: FontWeight.w600,
+            //                       fontSize: 14),
+            //                 ),
+            //                 const SizedBox(
+            //                   height: 20,
+            //                 ),
+            //                 GestureDetector(
+            //                   onTap: () {
+            //                     print('Click Share');
+            //                   },
+            //                   child: SvgPicture.asset(
+            //                     'assets/svg/message_icon.svg',
+            //                     height: 28,
+            //                   ),
+            //                 ),
+            //                 const SizedBox(
+            //                   height: 7,
+            //                 ),
+            //                 Text(
+            //                   '${data!.counting.share}',
+            //                   style: TextStyle(
+            //                       color:
+            //                           Theme.of(context).colorScheme.onPrimary,
+            //                       fontWeight: FontWeight.w600,
+            //                       fontSize: 14),
+            //                 ),
+            //                 const SizedBox(
+            //                   height: 20,
+            //                 ),
+            //                 IconButton(
+            //                     onPressed: () {
+            //                       print('Click More Icon');
+            //                     },
+            //                     icon: Icon(
+            //                       Icons.more_vert,
+            //                       color:
+            //                           Theme.of(context).colorScheme.onPrimary,
+            //                       size: 25,
+            //                     )),
+            //                 // if (data!.music != null)
+            //                 //   Column(
+            //                 //     children: [
+            //                 //       const SizedBox(
+            //                 //         height: 20,
+            //                 //       ),
+            //                 //       Padding(
+            //                 //         padding: const EdgeInsets.all(2.0),
+            //                 //         child: SizedBox(
+            //                 //           height: 42,
+            //                 //           width: 42,
+            //                 //           child: CircleImageAnimation(
+            //                 //             child: SvgPicture.asset(
+            //                 //               'assets/svg/disc.svg',
+            //                 //               // height: 28,
+            //                 //             ),
+            //                 //           ),
+            //                 //         ),
+            //                 //       ),
+            //                 //     ],
+            //                 //   ),
+            //                 const SizedBox(
+            //                   height: 20,
+            //                 ),
+            //               ],
+            //             ),
+            //           ),
+            //         ),
+            //         if (data!.music != null)
+            //           Positioned(
+            //             right: -32,
+            //             bottom: -10,
+            //             child: Lottie.asset(
+            //               "assets/lottie/nada.json",
+            //               repeat: true,
+            //             ),
+            //           ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
+            // ValueListenableBuilder<bool>(
+            //   valueListenable: isLiked,
+            //   builder: (context, value, child) {
+            //     return isLiked.value
+            //         ? Positioned(
+            //             top: positionDxDy.dy - 110,
+            //             left: positionDxDy.dx - 110,
+            //             child: SizedBox(
+            //                 height: 220,
+            //                 child: CustomLottieScreen(
+            //                   onAnimationFinished: () {},
+            //                 )),
+            //           )
+            //         : const SizedBox.shrink();
+            //   },
+            // ),
           ],
         ),
       ),

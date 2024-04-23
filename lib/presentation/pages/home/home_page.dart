@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:inview_notifier_list/inview_notifier_list.dart';
@@ -14,7 +13,6 @@ import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/content/post/post_content_cubit.dart';
 import 'package:screenshare/presentation/pages/home/widgers/story_page.dart';
-import 'package:screenshare/presentation/pages/home/widgers/video_player.dart';
 import 'package:screenshare/presentation/pages/home/widgers/video_player_better.dart';
 
 import 'widgers/content_loader.dart';
@@ -81,9 +79,10 @@ class _HomePageState extends State<HomePage> {
       if (event is ContentLoaded) {
         for (var e in event.content.data ?? []) {
           if (result.where((f) => f.id == e.id).isEmpty) {
-            result.insert(0, e);
+            result.add(e);
           }
         }
+        
         if (event.content.data?.isEmpty ?? false) {
           Utilitas.isLastPage = true;
           Utilitas.isLoadMore = false;
@@ -150,7 +149,6 @@ class _HomePageState extends State<HomePage> {
                         const CustomDivider(),
                         BlocBuilder<PostContentCubit, PostContentState>(
                             builder: (context, state) {
-                          print('disini state portcontent $state');
                           if (state is PostContentLoading) {
                             return Padding(
                               padding: const EdgeInsets.all(4.0),
@@ -244,23 +242,6 @@ class _HomePageState extends State<HomePage> {
                                   isFullScreen: false,
                                 );
                               }
-
-                              // if (isVideo) {
-                              //   return VideoPlayerWidget(
-                              //     datas: result,
-                              //     index: index,
-                              //     isFullScreen: false,
-                              //     play: isInView,
-                              //     resumed: false,
-                              //   );
-                              // } else {
-                              //   return PicturePlayerWidget(
-                              //     data: result[index],
-                              //     index: index,
-                              //     play: isInView,
-                              //     isFullScreen: false,
-                              //   );
-                              // }
                             },
                           );
                         },

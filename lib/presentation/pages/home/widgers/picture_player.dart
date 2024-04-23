@@ -227,8 +227,8 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                     builder: (context, value, _) {
                       return SvgPicture.asset(
                         data!.liked ?? false
-                            ? 'assets/svg/loved_icon.svg'
-                            : 'assets/svg/love_icon.svg',
+                            ? 'assets/svg/liked.svg'
+                            : 'assets/svg/like.svg',
                         height: 25,
                         colorFilter: data!.liked ?? false
                             ? null
@@ -242,7 +242,7 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                     width: 20,
                   ),
                   SvgPicture.asset(
-                    'assets/svg/comment_icon.svg',
+                    'assets/svg/comment.svg',
                     height: 25,
                     colorFilter: ColorFilter.mode(
                         Theme.of(context).colorScheme.primary, BlendMode.srcIn),
@@ -251,7 +251,7 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                     width: 20,
                   ),
                   SvgPicture.asset(
-                    'assets/svg/message_icon.svg',
+                    'assets/svg/share.svg',
                     height: 25,
                     colorFilter: ColorFilter.mode(
                         Theme.of(context).colorScheme.primary, BlendMode.srcIn),
@@ -280,7 +280,7 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                 ],
               ),
               SvgPicture.asset(
-                'assets/svg/favorite-icon.svg',
+                'assets/svg/bookmark.svg',
                 height: 25,
                 colorFilter: ColorFilter.mode(
                     Theme.of(context).colorScheme.primary, BlendMode.srcIn),
@@ -413,16 +413,6 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                 timer!.cancel();
                 player.play();
               },
-              onDoubleTapDown: (details) {
-                var position = details.localPosition;
-                positionDxDy = position;
-                isLiked.value = true;
-
-                Future.delayed(const Duration(milliseconds: 1200), () {
-                  isLiked.value = false;
-                  likeAddTapScreen(data!);
-                });
-              },
               child: PageView.builder(
                 itemCount: data!.pic!.length,
                 physics: const BouncingScrollPhysics(),
@@ -432,8 +422,6 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                   return CachedNetworkImage(
                     imageUrl: '${Configs.baseUrlPic}/${data!.pic?[i].file}',
                     fit: BoxFit.contain,
-                    // memCacheHeight: (data!.pic![i].height!).toInt(),
-                    // memCacheWidth: (data!.pic![i].width!).toInt(),
                     placeholder: (context, url) {
                       return LoadingWidget(
                         rightcolor: Theme.of(context).primaryColor,
@@ -471,189 +459,6 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                 ),
               ),
             ),
-          Positioned(
-            child: AnimatedOpacity(
-              duration: const Duration(seconds: 1),
-              opacity: animatedOpacity ? 1.0 : 0.0,
-              onEnd: () {
-                if (animatedOpacity) {
-                  Future.delayed(const Duration(seconds: 3), () {
-                    setState(() {
-                      animatedOpacity = !animatedOpacity;
-                    });
-                  });
-                }
-              },
-              child: Center(
-                child: SoundMusic(
-                  player: player,
-                  isFullScreen: widget.isFullScreen,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 15,
-              ),
-              child: Column(
-                children: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable: isData,
-                    builder: (context, value, _) {
-                      return Column(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              print('liked icon');
-                            },
-                            child: SvgPicture.asset(
-                              data!.liked ?? false
-                                  ? 'assets/svg/loved_icon.svg'
-                                  : 'assets/svg/love_icon.svg',
-                              height: 25,
-                              colorFilter: data!.liked ?? false
-                                  ? null
-                                  : const ColorFilter.mode(
-                                      Colors.white, BlendMode.srcIn),
-                            ),
-                          ),
-                          Text(
-                            data!.counting.likes.formatNumber(),
-                            style: TextStyle(
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  offset: const Offset(.5, .5),
-                                  blurRadius: 1.0,
-                                  color: Colors.grey.withOpacity(.5),
-                                ),
-                                Shadow(
-                                    offset: const Offset(.5, .5),
-                                    blurRadius: 1.0,
-                                    color: Colors.grey.withOpacity(.5)),
-                              ],
-                            ),
-                          )
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      print('Click Comment');
-                    },
-                    child: SvgPicture.asset(
-                      'assets/svg/comment_icon.svg',
-                      height: 28,
-                      colorFilter: ColorFilter.mode(
-                          Theme.of(context).colorScheme.onPrimary,
-                          BlendMode.srcIn),
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 7,
-                  ),
-                  Text(
-                    '${data!.counting.comments}',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14),
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      print('Click Share');
-                    },
-                    child: SvgPicture.asset(
-                      'assets/svg/message_icon.svg',
-                      height: 28,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 7,
-                  ),
-                  Text(
-                    '${data!.counting.share}',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14),
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  IconButton(
-                      onPressed: () {
-                        print('Click More Icon');
-                      },
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        size: 25,
-                      )),
-                  if (data!.music != null)
-                    Column(
-                      children: [
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(2.0),
-                          child: SizedBox(
-                            height: 42,
-                            width: 42,
-                            child: CircleImageAnimation(
-                              child: SvgPicture.asset(
-                                'assets/svg/disc.svg',
-                                // height: 28,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (data!.music != null)
-            Positioned(
-              right: -32,
-              bottom: -10,
-              child: Lottie.asset(
-                "assets/lottie/nada.json",
-                repeat: true,
-              ),
-            ),
-          ValueListenableBuilder<bool>(
-            valueListenable: isLiked,
-            builder: (context, value, child) {
-              return isLiked.value
-                  ? Positioned(
-                      top: positionDxDy.dy - 110,
-                      left: positionDxDy.dx - 110,
-                      child: SizedBox(
-                          height: 220,
-                          child: CustomLottieScreen(
-                            onAnimationFinished: () {},
-                          )),
-                    )
-                  : const SizedBox.shrink();
-            },
-          ),
         ],
       ),
     );

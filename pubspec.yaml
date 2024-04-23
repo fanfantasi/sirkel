@@ -47,6 +47,7 @@ dependencies:
   photo_gallery: ^2.2.1
   
   permission_handler: ^11.0.1
+  flutter_no_internet_widget: ^1.0.0+18-dev.1
   
 
   get_it: ^7.6.4

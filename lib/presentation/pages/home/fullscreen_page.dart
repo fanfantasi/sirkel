@@ -1,20 +1,27 @@
+import 'dart:async';
+
 import 'package:expandable_text/expandable_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:screenshare/core/utils/extentions.dart';
 import 'package:screenshare/core/utils/utils.dart';
-import 'package:screenshare/core/widgets/loadingwidget.dart';
+import 'package:screenshare/core/widgets/circle_image_animation.dart';
+import 'package:screenshare/core/widgets/custom_lottie_screen.dart';
 import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:screenshare/domain/entities/result_entity.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
+import 'package:screenshare/presentation/pages/home/widgers/appbar_reels.dart';
 import 'package:screenshare/presentation/pages/home/widgers/marquee_music.dart';
 import 'package:screenshare/presentation/pages/home/widgers/video_player_better.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 import 'widgers/picture_player.dart';
 import 'widgers/user_profile.dart';
-import 'widgers/video_player.dart';
 
 class FullscreenPage extends StatefulWidget {
   const FullscreenPage({super.key});
@@ -27,36 +34,47 @@ class _FullscreenPageState extends State<FullscreenPage> {
   PageController controller = PageController();
   PageController controllerPic = PageController();
 
+  final ValueNotifier<int> selectedIndex = ValueNotifier<int>(0);
+  final ValueNotifier<bool> isLiked = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isData = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isHideScroll = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isHide = ValueNotifier<bool>(false);
 
   List<ResultContentEntity> datas = [];
-  bool isVideo = false;
   bool isPlaying = false;
-  int? seletedIndex = 0;
-  int  currentIndex= -1;
+  int currentIndex = -1;
   bool titleShow = true;
   Duration? position;
   bool expanded = false;
+  bool isVideo = false;
+  int lastPage = 0;
 
   bool scrollUp = false;
   bool scrollDown = true;
+
+  Timer? timer;
+  Offset positionDxDy = const Offset(0, 0);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      isHide.value = false;
       controller.addListener(() async {
-        scrollUp =
-            controller.position.userScrollDirection == ScrollDirection.forward;
-        scrollDown =
-            controller.position.userScrollDirection == ScrollDirection.reverse;
         if (controller.position.userScrollDirection ==
             ScrollDirection.forward) {
-          isHide.value = false;
+          isHideScroll.value = false;
+          setState(() {
+            scrollUp = true;
+            scrollDown = false;
+          });
         } else if (controller.position.userScrollDirection ==
             ScrollDirection.reverse) {
-          isHide.value = true;
+          isHideScroll.value = true;
+          setState(() {
+            scrollDown = true;
+            scrollUp = false;
+          });
         }
 
         onScrollListener();
@@ -67,6 +85,7 @@ class _FullscreenPageState extends State<FullscreenPage> {
   void onScrollListener() async {
     if (controller.position.pixels >= controller.position.maxScrollExtent &&
         !Utilitas.isLastPage) {
+      lastPage = datas.length;
       if (Utilitas.isLoadMore) {
         return;
       }
@@ -94,8 +113,8 @@ class _FullscreenPageState extends State<FullscreenPage> {
   Future onLoadmore() async {
     if (!mounted) return;
     Future.microtask(() async {
-      context.read<ContentCubit>().getContent(page: Utilitas.page);
-      Future.delayed(const Duration(seconds: 1), () async {
+      await context.read<ContentCubit>().getContent(page: Utilitas.page);
+      Future.delayed(const Duration(milliseconds: 100), () async {
         setState(() {
           Utilitas.isLoadMore = false;
         });
@@ -107,12 +126,13 @@ class _FullscreenPageState extends State<FullscreenPage> {
   void didChangeDependencies() {
     if (datas.isEmpty) {
       var map = ModalRoute.of(context)!.settings.arguments as List;
-      seletedIndex = map[0];
-      currentIndex = seletedIndex??0;
+      selectedIndex.value = map[0];
+      currentIndex = selectedIndex.value;
       datas = map[1];
+      lastPage = datas.length;
       position = map[2] ?? Duration.zero;
-      controller = PageController(initialPage: seletedIndex ?? 0);
-      isVideo = datas[seletedIndex ?? 0]
+      controller = PageController(initialPage: selectedIndex.value);
+      isVideo = datas[selectedIndex.value]
           .pic!
           .where((e) =>
               e.file!.split('.').last.toLowerCase().extentionfile() == 'video')
@@ -122,26 +142,16 @@ class _FullscreenPageState extends State<FullscreenPage> {
     super.didChangeDependencies();
   }
 
-  void likeAddTapScreen(ResultContentEntity selectedData, int index) async {
+  void likeAddTapScreen(ResultContentEntity selectedData) async {
     ResultEntity? result;
-    if (selectedData.likedId != null) {
-      result = await context
-          .read<LikedCubit>()
-          .liked(id: selectedData.likedId, postId: selectedData.id);
-    } else {
+    if (selectedData.likedId == null) {
       result = await context.read<LikedCubit>().liked(postId: selectedData.id);
-    }
-    if (result != null) {
-      if (selectedData.likedId != null) {
-        datas[index].liked = false;
-        datas[index].likedId = null;
-        datas[index].counting.likes -= 1;
-        isData.value = datas[index].liked ?? false;
-      } else {
-        datas[index].liked = true;
-        datas[index].likedId = result.returned ?? '';
-        datas[index].counting.likes += 1;
-        isData.value = datas[index].liked ?? true;
+      isData.value = datas[selectedIndex.value].liked ?? true;
+      if (result != null) {
+        datas[selectedIndex.value].liked = true;
+        datas[selectedIndex.value].likedId = result.returned ?? '';
+        datas[selectedIndex.value].counting.likes += 1;
+        isData.value = datas[selectedIndex.value].liked ?? true;
       }
     }
   }
@@ -152,201 +162,162 @@ class _FullscreenPageState extends State<FullscreenPage> {
     controllerPic.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: PageView.builder(
-          itemCount: Utilitas.isLoadMore ? datas.length + 1 : datas.length,
-          controller: controller,
-          physics: const BouncingScrollPhysics(),
-          scrollDirection: Axis.vertical,
-          onPageChanged: (value){
-            setState(() {
-              currentIndex = value;
-            });
-          },
-          itemBuilder: (context, index) {
-            if (datas.length == index) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 16, bottom: 16),
-                child: Center(
-                  child: LoadingWidget(
-                    leftcolor: Theme.of(context).primaryColor,
-                    rightcolor: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              );
-            }
-            isVideo = datas[index]
-                .pic!
-                .where((e) =>
-                    e.file!.split('.').last.toLowerCase().extentionfile() ==
-                    'video')
-                .isNotEmpty;
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned.fill(
-                  child: fullscreenPage(index: index),
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: isHide,
-                  builder: (context, value, child) {
-                    return Positioned(
-                      top: 0,
-                      child: AnimatedOpacity(
-                        opacity: value ? 0 : 1,
-                        duration: const Duration(seconds: 2),
-                        child: Container(
-                          width: MediaQuery.of(context).size.width,
-                          height: kToolbarHeight * 2,
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  icon: const Icon(
-                                    Icons.arrow_back_ios,
-                                    color: Colors.white,
-                                  )),
-                              Text(
-                                "Reels",
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimary
-                                      .withOpacity(0.98),
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.w800,
-                                  shadows: [
-                                    Shadow(
-                                        offset: const Offset(.5, .5),
-                                        blurRadius: 1.0,
-                                        color: isVideo
-                                            ? Colors.grey.withOpacity(.5)
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .onPrimary),
-                                    Shadow(
-                                        offset: const Offset(.5, .5),
-                                        blurRadius: 1.0,
-                                        color: isVideo
-                                            ? Colors.grey.withOpacity(.5)
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .onPrimary),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: PageView.builder(
+              itemCount: Utilitas.isLoadMore ? datas.length + 1 : datas.length,
+              controller: controller,
+              physics: const BouncingScrollPhysics(),
+              scrollDirection: Axis.vertical,
+              onPageChanged: (value) {
+                currentIndex = value;
+                selectedIndex.value = value;
+                isHide.value = !isData.value;
+              },
+              itemBuilder: (context, index) {
+                if (datas.length == index && Utilitas.isLoadMore) {
+                  return Container(
+                    color: Colors.black12,
+                    padding: const EdgeInsets.only(top: 16, bottom: 16),
+                    child: Center(
+                      child: Shimmer.fromColors(
+                        baseColor: Colors.grey,
+                        highlightColor: Colors.black38,
+                        child: Image.asset(
+                          'assets/icons/sirkel.png',
+                          height: MediaQuery.of(context).size.width * .5,
                         ),
                       ),
-                    );
-                  },
-                ),
-                if (expanded)
-                  Container(
-                    height: double.maxFinite,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.8),
-                      gradient: const LinearGradient(
-                        begin: FractionalOffset.topCenter,
-                        end: FractionalOffset.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black,
-                        ],
-                        stops: [0.0, 1.0],
-                      ),
                     ),
-                  ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  );
+                } else {
+                  isVideo = datas[index]
+                      .pic!
+                      .where((e) =>
+                          e.file!
+                              .split('.')
+                              .last
+                              .toLowerCase()
+                              .extentionfile() ==
+                          'video')
+                      .isNotEmpty;
+                  return GestureDetector(
+                    onDoubleTapDown: (details) {
+                      var position = details.localPosition;
+                      positionDxDy = position;
+                      isLiked.value = true;
+
+                      Future.delayed(const Duration(milliseconds: 1200), () {
+                        isLiked.value = false;
+                        likeAddTapScreen(datas[index]);
+                      });
+                    },
+                    child: fullscreenPage(index: index, value: isVideo),
+                  );
+                }
+              },
+            ),
+          ),
+
+          //Top ====================
+          Positioned(
+            top: kToolbarHeight - 12,
+            left: 0,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: isHideScroll,
+              builder: (context, value, child) {
+                return AnimatedOpacity(
+                    opacity: value ? 0 : 1,
+                    duration: const Duration(seconds: 2),
+                    child: AppBarReels(isVideo: isVideo));
+              },
+            ),
+          ),
+          if (expanded)
+            Container(
+              height: double.maxFinite,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(.8),
+                gradient: const LinearGradient(
+                  begin: FractionalOffset.topCenter,
+                  end: FractionalOffset.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black,
+                  ],
+                  stops: [0.0, 1.0],
+                ),
+              ),
+            ),
+          //Bottom ===============
+          Positioned(
+            right: -32,
+            bottom: -10,
+            child: Lottie.asset(
+              "assets/lottie/nada.json",
+              repeat: true,
+            ),
+          ),
+          if (selectedIndex.value < datas.length)
+            Positioned(
+              bottom: 8,
+              left: 18,
+              right: 16,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          //Start
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 20),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  UserProfileWidget(
-                                    data: datas[index],
-                                    isVideo: true,
-                                    horizontal: 8.0,
-                                    moreMenus: false,
-                                    color:
-                                        Theme.of(context).colorScheme.onPrimary,
-                                  ),
-                                  const SizedBox(
-                                    height: 12,
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        left: 8.0, right: 32),
-                                    child: ExpandableText(
-                                      datas[index].caption ?? '',
-                                      expandText: '',
-                                      style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimary,
-                                          fontWeight: FontWeight.w400,
-                                          fontSize: 14),
-                                      collapseText: '',
-                                      expandOnTextTap: true,
-                                      collapseOnTextTap: true,
-                                      maxLines: 2,
-                                      linkColor: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimary
-                                          .withOpacity(0.5),
-                                      onExpandedChanged: (value) {
-                                        setState(() {
-                                          expanded = value;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    height: 12,
-                                  ),
-                                  if (datas[index].music != null)
-                                    MarqueeMusic(
-                                      isVideo: true,
-                                      title: datas[index].music!.name,
-                                    ),
-                                  const SizedBox(
-                                    height: 12,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      //Start
+                      leftContent(),
+                      // End
+                      rightContent()
                     ],
                   ),
-                ),
-              ],
-            );
-          }),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: isMusic(),
+                  )
+                ],
+              ),
+            ),
+          ValueListenableBuilder<bool>(
+            valueListenable: isLiked,
+            builder: (context, value, child) {
+              return isLiked.value
+                  ? Positioned(
+                      top: positionDxDy.dy - 110,
+                      left: positionDxDy.dx - 110,
+                      child: SizedBox(
+                          height: 220,
+                          child: CustomLottieScreen(
+                            onAnimationFinished: () {},
+                          )),
+                    )
+                  : const Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      top: 0,
+                      child: SizedBox.shrink(),
+                    );
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  Widget fullscreenPage({int index = 0}) {
-    return isVideo
+  Widget fullscreenPage({int index = 0, bool value = false}) {
+    return value
         ? BetterPlayerWidget(
             datas: datas,
             index: index,
@@ -357,9 +328,196 @@ class _FullscreenPageState extends State<FullscreenPage> {
         : PicturePlayerWidget(
             datas: datas,
             index: index,
-            play: currentIndex == index ? true :false,
+            play: currentIndex == index ? true : false,
             isFullScreen: true,
             positionAudio: position,
           );
+  }
+
+  Widget isMusic() {
+    return Row(
+      children: [
+        MarqueeMusic(
+          isVideo: true,
+          title: (datas[selectedIndex.value].music != null)
+              ? datas[selectedIndex.value].music!.name
+              : 'suara asli ${datas[selectedIndex.value].author?.username ?? ''}  - ',
+        ),
+        Container(
+          margin: const EdgeInsets.only(left: 18),
+          height: 32,
+          width: 32,
+          child: CircleImageAnimation(
+            child: (datas[selectedIndex.value].music != null)
+                ? SvgPicture.asset(
+                    'assets/svg/disc.svg',
+                    // height: 28,
+                  )
+                : CircleAvatar(
+                    radius: 12,
+                    backgroundColor: Theme.of(context).colorScheme.onPrimary,
+                    child: ClipOval(
+                      child: FadeInImage.memoryNetwork(
+                        placeholder: kTransparentImage,
+                        image: datas[selectedIndex.value].author?.avatar ?? '',
+                        imageCacheHeight: 28,
+                        imageCacheWidth: 28,
+                        imageErrorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                              'assets/icons/ic-account-user.png');
+                        },
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget leftContent() {
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          UserProfileWidget(
+            data: datas[selectedIndex.value],
+            isVideo: true,
+            horizontal: 0.0,
+            moreMenus: false,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
+          if (datas[selectedIndex.value].caption != '')
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0, right: 8, bottom: 12.0),
+              child: ExpandableText(
+                datas[selectedIndex.value].caption ?? '',
+                expandText: '',
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.w400,
+                    fontSize: 14),
+                collapseText: '',
+                expandOnTextTap: true,
+                collapseOnTextTap: true,
+                maxLines: 2,
+                linkColor:
+                    Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+                onExpandedChanged: (value) {
+                  setState(() {
+                    expanded = value;
+                  });
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget rightContent() {
+    return Column(
+          children: [
+            ValueListenableBuilder<bool>(
+              valueListenable: isData,
+              builder: (context, value, _) {
+                return Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        print('liked icon');
+                      },
+                      child: SvgPicture.asset(
+                        datas[selectedIndex.value].liked ?? false
+                            ? 'assets/svg/liked.svg'
+                            : 'assets/svg/like.svg',
+                        height: 28,
+                        colorFilter: datas[selectedIndex.value].liked ?? false
+                            ? null
+                            : const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      ),
+                    ),
+                    Text(
+                      datas[selectedIndex.value].counting.likes.formatNumber(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: const Offset(.5, .5),
+                            blurRadius: 1.0,
+                            color: Colors.grey.withOpacity(.5),
+                          ),
+                          Shadow(
+                              offset: const Offset(.5, .5),
+                              blurRadius: 1.0,
+                              color: Colors.grey.withOpacity(.5)),
+                        ],
+                      ),
+                    )
+                  ],
+                );
+              },
+            ),
+            const SizedBox(
+              height: 20,
+            ),
+            GestureDetector(
+              onTap: () {
+                print('Click Comment');
+              },
+              child: SvgPicture.asset(
+                'assets/svg/comment.svg',
+                height: 28,
+                colorFilter: ColorFilter.mode(
+                    Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
+              ),
+            ),
+            Text(
+              '${datas[selectedIndex.value].counting.comments}',
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14),
+            ),
+            const SizedBox(
+              height: 18,
+            ),
+            GestureDetector(
+              onTap: () {
+                print('Click Share');
+              },
+              child: SvgPicture.asset(
+                'assets/svg/share.svg',
+                height: 28,
+                colorFilter: ColorFilter.mode(
+                    Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
+              ),
+            ),
+            Text(
+              '${datas[selectedIndex.value].counting.share}',
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14),
+            ),
+            const SizedBox(
+              height: 8,
+            ),
+            IconButton(
+              onPressed: () {
+                print('Click More Icon');
+              },
+              icon: Icon(
+                Icons.more_vert,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 25,
+              ),
+            ),
+            const SizedBox(
+              height: 8,
+            ),
+          ],
+        );
   }
 }

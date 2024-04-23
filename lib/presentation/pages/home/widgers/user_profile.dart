@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:screenshare/core/utils/headers.dart';
@@ -7,14 +8,14 @@ import 'package:transparent_image/transparent_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class UserProfileWidget extends StatelessWidget {
-  final ResultContentEntity data;
+  final ResultContentEntity? data;
   final Color? color;
   final bool isVideo;
   final double horizontal;
   final bool moreMenus;
   const UserProfileWidget(
       {super.key,
-      required this.data,
+      this.data,
       this.color,
       this.horizontal = 15.0,
       this.isVideo = false,
@@ -43,13 +44,10 @@ class UserProfileWidget extends StatelessWidget {
                   radius: 18,
                   backgroundColor: Theme.of(context).colorScheme.onPrimary,
                   child: ClipOval(
-                    child: FadeInImage.memoryNetwork(
-                      placeholder: kTransparentImage,
-                      image: data.author?.avatar ?? '',
-                      imageCacheHeight: 38,
-                      imageCacheWidth: 38,
-                      imageErrorBuilder: (context, error, stackTrace) {
-                        return Image.asset('assets/icons/ic-account-user.png');
+                    child: CachedNetworkImage(
+                      imageUrl: data?.author?.avatar ?? '',
+                      placeholder: (context, url) {
+                        return Image.asset('assets/icons/sirkel.png');
                       },
                     ),
                   ),
@@ -64,7 +62,7 @@ class UserProfileWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        data.author?.name ?? '',
+                        data?.author?.name ?? '',
                         style: GoogleFonts.sourceSansPro(
                           color: color ?? Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w600,
@@ -87,7 +85,7 @@ class UserProfileWidget extends StatelessWidget {
                       ),
                       if (moreMenus)
                       Text(
-                        timeago.format(DateTime.parse(data.createdAt!),
+                        timeago.format(DateTime.parse(data?.createdAt??DateTime.now().toString()),
                             locale: 'id'),
                         style: TextStyle(
                           color: color ??
@@ -118,7 +116,7 @@ class UserProfileWidget extends StatelessWidget {
                   const SizedBox(
                     width: 10,
                   ),
-                  if (data.author!.username != Utilitas.currentUser['username'])
+                  if (data?.author!.username != Utilitas.currentUser['username'])
                   OutlinedButton(
                     onPressed: () {},
                     style: OutlinedButton.styleFrom(
