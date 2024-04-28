@@ -16,6 +16,7 @@ import 'package:screenshare/core/widgets/camera_countdown.dart';
 import 'package:screenshare/core/widgets/loadingwidget.dart';
 import 'package:screenshare/domain/entities/music_entity.dart';
 import 'package:screenshare/domain/entities/post_content_entity.dart';
+import 'package:screenshare/presentation/pages/gallery/widgets/image.dart';
 
 import 'widgets/music_widget.dart';
 
@@ -29,14 +30,19 @@ class CameraPage extends StatefulWidget {
 class _CameraPageState extends State<CameraPage> {
   ResultMusicEntity? musicSelected;
 
-
   PageController pageController =
       PageController(initialPage: 1, viewportFraction: .2);
 
   int selectedTab = 1;
   final List<Map<String, dynamic>> postTypes = [
-    {"typepost":'story', "label":"story".tr(),},
-    {"typepost":'content', "label":"content".tr(),},
+    {
+      "typepost": 'story',
+      "label": "story".tr(),
+    },
+    {
+      "typepost": 'content',
+      "label": "content".tr(),
+    },
   ];
   int cameraTab = 0;
 
@@ -44,20 +50,20 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   void didChangeDependencies() {
-    var map =
-        ModalRoute.of(context)!.settings.arguments as List<CameraDescription>;
-    cameras = map;
-    debugPrint(cameras.toString());
     super.didChangeDependencies();
   }
 
   @override
   void initState() {
     MyAudioService.instance.stop();
-
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      // var map =
+      //     ModalRoute.of(context)!.settings.arguments as List<CameraDescription>;
+      // cameras = map;
+      // debugPrint(cameras.toString());
+    });
     super.initState();
   }
-
 
   // Future takePicture() async {
   //   imageResult.clear();
@@ -84,33 +90,66 @@ class _CameraPageState extends State<CameraPage> {
   Future<void> uploadPicture() async {
     MyAudioService.instance.stop();
     imageResult.clear();
-    // final ImagePicker picker = ImagePicker();
-    // // final pickerResult = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.media, allowCompression: true);
-    // final List<XFile> images = await picker.pickMultiImage(requestFullMetadata: true);
-    // if (images.isNotEmpty) {
-    //   for (var e in images) {
-    //     imageResult.add(e.path);
-    //   }
-    //   if (!mounted) return;
-    //   Navigator.pushNamed(context, Routes.previewPicturePage,
-    //       arguments: PostContentEntity(files: imageResult, music: musicSelected));
-    // }
-    // var res = await Navigator.pushNamed(context, Routes.galleryPage, arguments: 4);
-    Navigator.pushNamed(context, Routes.galleryPage, arguments: 4).then((value) async {
+    Duration? durationVideo;
+    Navigator.pushNamed(context, Routes.galleryPage, arguments: 4)
+        .then((value) async {
       List<AssetEntity> items = value as List<AssetEntity>;
-      List<String> path=[];
-      // 
-      if (items.isNotEmpty){
+      List<String> path = [];
+      //
+      if (items.isNotEmpty) {
         for (var e in items) {
           final File? imageFile = await e.file;
           path.add(imageFile!.path);
-          print(imageFile.path);
+          if (thisVideo(imageFile.path)){
+            durationVideo = e.videoDuration;
+          }
         }
 
-        
         if (!mounted) return;
-          Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
-          arguments: PostContentEntity(files: path, music: musicSelected, type: postTypes[selectedTab]['typepost']));
+        if (thisVideo(path.first)){
+          if (durationVideo != null){
+            if (postTypes[selectedTab]['typepost'] == 'story'){
+              if (durationVideo! > const Duration(seconds: 10)){
+                Navigator.pushNamed(
+                      context,
+                      Routes.videoTrimmerPage,
+                      arguments: PostContentEntity(
+                          files: imageResult,
+                          music: musicSelected,
+                          durationVideo: const Duration(seconds: 10),
+                          type: postTypes[selectedTab]['typepost']),
+                    );
+              }
+            }else if (postTypes[selectedTab]['typepost'] == 'content'){
+              if (durationVideo! > const Duration(seconds: 30)){
+                Navigator.pushNamed(
+                      context,
+                      Routes.videoTrimmerPage,
+                      arguments: PostContentEntity(
+                          files: imageResult,
+                          music: musicSelected,
+                          durationVideo: const Duration(seconds: 30),
+                          type: postTypes[selectedTab]['typepost']),
+                    );
+              }
+            }
+          }
+        }else{
+          Navigator.pushNamed(
+            context,
+            Routes.imageEditorPage,
+            arguments: PostContentEntity(
+                files: imageResult,
+                music: musicSelected,
+                type: postTypes[selectedTab]['typepost']),
+          );
+          // Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
+          //   arguments: PostContentEntity(
+          //       files: path,
+          //       music: musicSelected,
+          //       type: postTypes[selectedTab]['typepost']));
+        }
+        
       }
     });
     // print(res);
@@ -130,7 +169,7 @@ class _CameraPageState extends State<CameraPage> {
       backgroundColor: Colors.black,
       body: Column(
         children: [
-         _buildCameraAwesome(),
+          _buildCameraAwesome(),
           const Spacer(),
           SizedBox(
             height: kToolbarHeight,
@@ -148,7 +187,10 @@ class _CameraPageState extends State<CameraPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          LoadingWidget(leftcolor: Theme.of(context).primaryColor, rightcolor: Colors.white,),
+          LoadingWidget(
+            leftcolor: Theme.of(context).primaryColor,
+            rightcolor: Colors.white,
+          ),
           Text(
             'please wait'.tr(),
             style: const TextStyle(color: Colors.white),
@@ -177,11 +219,15 @@ class _CameraPageState extends State<CameraPage> {
                 AwesomeCameraModeSelector(state: state),
                 if (state is VideoRecordingCameraState)
                   CameraCountdown(
-                    time: const Duration(seconds: 10),
+                    time: postTypes[selectedTab]['typepost'] == 'story'
+                        ? const Duration(seconds: 10)
+                        : const Duration(seconds: 30),
                     callback: () {
-                      state.stopRecording(onVideo: (request) {
-                        return request;
-                      },);
+                      state.stopRecording(
+                        onVideo: (request) {
+                          return request;
+                        },
+                      );
                     },
                   ),
               ],
@@ -198,11 +244,25 @@ class _CameraPageState extends State<CameraPage> {
               event.captureRequest.when(
                 single: (single) {
                   debugPrint('Picture saved: ${single.file?.path}');
-                      imageResult.add(single.file?.path??'');
-                      if (!mounted) return;
-                      Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
-                          arguments: PostContentEntity(files: imageResult, music: musicSelected, type: postTypes[selectedTab]['typepost']));
-                                },
+                  imageResult.clear();
+                  imageResult.add(single.file?.path ?? '');
+                  if (!mounted) return;
+
+                  Navigator.pushReplacementNamed(
+                    context,
+                    Routes.imageEditorPage,
+                    arguments: PostContentEntity(
+                        files: imageResult,
+                        music: musicSelected,
+                        type: postTypes[selectedTab]['typepost']),
+                  );
+                  // Navigator.pushReplacementNamed(
+                  //     context, Routes.previewPicturePage,
+                  //     arguments: PostContentEntity(
+                  //         files: imageResult,
+                  //         music: musicSelected,
+                  //         type: postTypes[selectedTab]['typepost']));
+                },
                 multiple: (multiple) {
                   multiple.fileBySensor.forEach((key, value) {
                     debugPrint('multiple image taken: $key ${value?.path}');
@@ -217,10 +277,19 @@ class _CameraPageState extends State<CameraPage> {
               event.captureRequest.when(
                 single: (single) {
                   debugPrint('Video saved: ${single.file?.path}');
-                  imageResult.add(single.file?.path??'');
-                      if (!mounted) return;
-                      Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
-                          arguments: PostContentEntity(files: imageResult, music: musicSelected, type: postTypes[selectedTab]['typepost']));
+                  imageResult.clear();
+                  imageResult.add(single.file?.path ?? '');
+                  if (!mounted) return;
+                  // Navigator.pushNamed(
+                  //   context,
+                  //   Routes.videoTrimmerPage,
+                  //   arguments: PostContentEntity(
+                  //       files: imageResult,
+                  //       music: musicSelected,
+                  //       type: postTypes[selectedTab]['typepost']),
+                  // );
+                  Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
+                      arguments: PostContentEntity(files: imageResult, music: musicSelected, type: postTypes[selectedTab]['typepost']));
                 },
                 multiple: (multiple) {
                   multiple.fileBySensor.forEach((key, value) {
@@ -250,17 +319,17 @@ class _CameraPageState extends State<CameraPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: const Padding(
-                padding: EdgeInsets.only(top: 6),
-                child: Icon(
-                  Icons.close,
-                  shadows: <Shadow>[
-                    Shadow(color: Colors.black, blurRadius: 1.0)
-                  ],
-                  color: Colors.white,
-                ),
-              )),
+            onTap: () => Navigator.pop(context),
+            child: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(
+                Icons.close,
+                shadows: <Shadow>[Shadow(color: Colors.black, blurRadius: 1.0)],
+                color: Colors.white,
+              ),
+            ),
+          ),
+          if (state.captureMode == CaptureMode.photo)
           GestureDetector(
             onTap: () => showButtomSheetMusic(),
             child: Container(
@@ -320,7 +389,6 @@ class _CameraPageState extends State<CameraPage> {
                           setState(() {
                             musicSelected = null;
                           });
-                          
                         },
                         child: const SizedBox(
                           width: kToolbarHeight * .5,
@@ -464,7 +532,6 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Widget _buildCameraTemplateSelector() {
-    
     TextStyle style = Theme.of(context).textTheme.bodyLarge!.copyWith(
         fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold);
     return Align(
@@ -536,7 +603,7 @@ class _CameraPageState extends State<CameraPage> {
         startedPlaying: () {},
         stoppedPlaying: () {},
       );
-    }else{
+    } else {
       MyAudioService.instance.playagain(false);
     }
   }

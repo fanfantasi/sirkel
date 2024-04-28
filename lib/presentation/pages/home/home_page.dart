@@ -25,7 +25,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
   final ValueNotifier<int> isPlaying = ValueNotifier<int>(-1);
   late StreamSubscription<ContentState> picStream;
@@ -37,7 +37,6 @@ class _HomePageState extends State<HomePage> {
   bool progressPostContent = false;
   Offset positionDxDy = const Offset(0, 0);
   final debouncer = Debouncer(milliseconds: 1000);
-  bool isVideo = false;
   @override
   void initState() {
     if (result.isEmpty) {
@@ -58,11 +57,13 @@ class _HomePageState extends State<HomePage> {
       postContentStream =
           context.read<PostContentCubit>().stream.listen((event) {
         if (event is PostContentLoaded) {
+          _scrollTop(10);
+          // Configs.scrollControllerHome =  PageController(initialPage: 0);
           Utilitas.isRefreshPage = true;
           context
               .read<ContentCubit>()
               .getFindContent(id: event.result.returned);
-          _scrollTop();
+          
         }
       });
     });
@@ -79,7 +80,11 @@ class _HomePageState extends State<HomePage> {
       if (event is ContentLoaded) {
         for (var e in event.content.data ?? []) {
           if (result.where((f) => f.id == e.id).isEmpty) {
-            result.add(e);
+            if (Utilitas.isRefreshPage){
+              result.insert(0, e);
+            }else{
+              result.add(e);
+            }
           }
         }
         
@@ -98,9 +103,9 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _scrollTop() async {
+  void _scrollTop(int? milliseconds) async {
     await Configs.scrollControllerHome.animateTo(0,
-        duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
+        duration: Duration(milliseconds: milliseconds?? 300), curve: Curves.easeIn);
     Configs.scrollControllerHome.jumpTo(0.0);
   }
 
@@ -128,138 +133,116 @@ class _HomePageState extends State<HomePage> {
         },
         child:
             BlocBuilder<ContentCubit, ContentState>(builder: (context, state) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              InViewNotifierCustomScrollView(
-                controller: Configs.scrollControllerHome,
-                physics: const BouncingScrollPhysics(),
-                initialInViewIds: const ['0'],
-                isInViewPortCondition: (double deltaTop, double deltaBottom,
-                    double viewPortDimension) {
-                  return deltaTop < (0.6 * viewPortDimension) &&
-                      deltaBottom > (0.6 * viewPortDimension);
-                },
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(vertical: 0.0),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        StoryPage(avatar: avatar),
-                        const CustomDivider(),
-                        BlocBuilder<PostContentCubit, PostContentState>(
-                            builder: (context, state) {
-                          if (state is PostContentLoading) {
-                            return Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Proses upload sedang berlangsung ...',
-                                    style: TextStyle(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            .withOpacity(.6)),
-                                  ),
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
-                                  LinearProgressIndicator(
-                                    minHeight: 3,
+          return InViewNotifierCustomScrollView(
+            controller: Configs.scrollControllerHome,
+            physics: const BouncingScrollPhysics(),
+            initialInViewIds: const ['0'],
+            isInViewPortCondition: (double deltaTop, double deltaBottom,
+                double viewPortDimension) {
+              return deltaTop < (0.6 * viewPortDimension) &&
+                  deltaBottom > (0.6 * viewPortDimension);
+            },
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(vertical: 0.0),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    StoryPage(avatar: avatar),
+                    const CustomDivider(),
+                    BlocBuilder<PostContentCubit, PostContentState>(
+                        builder: (context, state) {
+                      if (state is PostContentLoading) {
+                        return Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Proses upload sedang berlangsung ...',
+                                style: TextStyle(
                                     color: Theme.of(context)
-                                        .primaryColor
-                                        .withOpacity(.7),
-                                    backgroundColor: Theme.of(context)
                                         .colorScheme
                                         .primary
-                                        .withOpacity(.2),
-                                  ),
-                                ],
+                                        .withOpacity(.6)),
                               ),
-                            );
-                          }
-                          return SizedBox.fromSize();
-                        }),
-                      ]),
-                    ),
-                  ),
-                  if (state is ContentLoading &&
-                      Utilitas.isInitialPage &&
-                      !Utilitas.isRefreshPage)
-                    SliverPadding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                                (BuildContext context, int index) {
-                          return const ContentLoader();
-                        }, childCount: 6))),
-                  SliverPadding(
+                              const SizedBox(
+                                height: 5,
+                              ),
+                              LinearProgressIndicator(
+                                minHeight: 3,
+                                color: Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(.7),
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(.2),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return SizedBox.fromSize();
+                    }),
+                  ]),
+                ),
+              ),
+              if (state is ContentLoading &&
+                  Utilitas.isInitialPage &&
+                  !Utilitas.isRefreshPage)
+                SliverPadding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          if (result.length == index) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.only(top: 16, bottom: 16),
-                              child: Center(
-                                child: LoadingWidget(
-                                  leftcolor: Theme.of(context).primaryColor,
-                                  rightcolor:
-                                      Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
+                        delegate: SliverChildBuilderDelegate(
+                            (BuildContext context, int index) {
+                      return const ContentLoader();
+                    }, childCount: 6))),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (result.length == index) {
+                        return Padding(
+                          padding:
+                              const EdgeInsets.only(top: 16, bottom: 16),
+                          child: Center(
+                            child: LoadingWidget(
+                              leftcolor: Theme.of(context).primaryColor,
+                              rightcolor:
+                                  Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        );
+                      }
+                      return InViewNotifierWidget(
+                        id: '$index',
+                        builder: (BuildContext context, bool isInView,
+                            Widget? child) {
+                          if (thisVideo(result[index].pic!.first.file??'')) {
+                            return  BetterPlayerWidget(
+                              datas: result,
+                              index: index,
+                              isFullScreen: false,
+                              play: isInView,
+                            );
+                          } else {
+                            return PicturePlayerWidget(
+                              datas: result,
+                              index: index,
+                              play: isInView,
+                              isFullScreen: false,
                             );
                           }
-                          return InViewNotifierWidget(
-                            id: '$index',
-                            builder: (BuildContext context, bool isInView,
-                                Widget? child) {
-                              bool isVideo = result[index]
-                                  .pic!
-                                  .where((e) =>
-                                      e.file!
-                                          .split('.')
-                                          .last
-                                          .toLowerCase()
-                                          .extentionfile() ==
-                                      'video')
-                                  .isNotEmpty;
-                              if (isVideo) {
-                                return BetterPlayerWidget(
-                                  datas: result,
-                                  index: index,
-                                  isFullScreen: false,
-                                  play: isInView,
-                                );
-                              } else {
-                                return PicturePlayerWidget(
-                                  datas: result,
-                                  index: index,
-                                  play: isInView,
-                                  isFullScreen: false,
-                                );
-                              }
-                            },
-                          );
                         },
-                        childCount: Utilitas.isLoadMore
-                            ? result.length + 1
-                            : result.length,
-                      ),
-                    ),
+                      );
+                    },
+                    childCount: Utilitas.isLoadMore
+                        ? result.length + 1
+                        : result.length,
                   ),
-                ],
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: Container(
-                  height: 1.0,
-                  color: Colors.redAccent,
                 ),
-              )
+              ),
             ],
           );
         }),

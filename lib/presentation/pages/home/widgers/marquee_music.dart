@@ -6,7 +6,8 @@ import 'package:screenshare/core/widgets/circle_image_animation.dart';
 class MarqueeMusic extends StatelessWidget {
   final String? title;
   final bool isVideo;
-  const MarqueeMusic({super.key, this.title, this.isVideo = false});
+  final bool isFullScreen;
+  const MarqueeMusic({super.key, this.title, this.isVideo = false, this.isFullScreen = false});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +23,7 @@ class MarqueeMusic extends StatelessWidget {
           width: 5,
         ),
         SizedBox(
-          width: MediaQuery.of(context).size.width * .7,
+          width: MediaQuery.of(context).size.width * (isVideo ? isFullScreen ? 0.7 : .85 : .7),
           height: 18,
           child: Marquee(
             text: '${title ?? ''} ',

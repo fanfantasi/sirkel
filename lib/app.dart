@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:screenshare/core/utils/utils.dart';
 
+import 'core/utils/config.dart';
 import 'core/utils/constants.dart';
 import 'core/utils/headers.dart';
 
@@ -25,7 +26,16 @@ class _AppPageState extends State<AppPage> {
 
   void initialPage() async {
     Future.delayed(const Duration(seconds: 1), () {
-      Navigator.pushNamedAndRemoveUntil(context, Routes.navigationPage, (route) => false);
+      Configs().handleEventLoginBool(context).then((value) {
+        print(value);
+        if (!value){
+          Navigator.pushNamedAndRemoveUntil(context, Routes.signInPage, (route) => false, arguments: Routes.root);
+        }else{
+          Navigator.pushNamedAndRemoveUntil(context, Routes.navigationPage, (route) => false);
+        }
+        
+      });
+      
     });
   }
 

@@ -76,6 +76,7 @@ class _GalleryPageState extends State<GalleryPage> {
     final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
       onlyAll: true,
     );
+
     if (!mounted) {
       return;
     }

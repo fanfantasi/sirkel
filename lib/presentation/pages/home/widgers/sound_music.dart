@@ -19,7 +19,7 @@ class _SoundMusicState extends State<SoundMusic> {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () async {
+      onTap:  () async {
         setState(() {
           Utilitas.isMute = !Utilitas.isMute;
           Utilitas.scrolling = 'scroll is stopped';

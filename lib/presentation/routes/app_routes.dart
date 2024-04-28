@@ -6,6 +6,9 @@ import 'package:screenshare/app.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/presentation/pages/auth/auth_page.dart';
 import 'package:screenshare/presentation/pages/camera/camera_page.dart';
+import 'package:screenshare/presentation/pages/camera/image_editor/image_editor.dart';
+import 'package:screenshare/presentation/pages/camera/preview_page.dart';
+import 'package:screenshare/presentation/pages/camera/video_trimmer/video_trimmer.dart';
 import 'package:screenshare/presentation/pages/circle/circle_page.dart';
 import 'package:screenshare/presentation/pages/gallery/gallery_page.dart';
 import 'package:screenshare/presentation/pages/home/fullscreen_page.dart';
@@ -18,7 +21,6 @@ import 'package:screenshare/presentation/pages/settings/setting_page.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
-    print('Navigation ${settings.name}');
     switch (settings.name) {
       case Routes.root:
         return MaterialPageRoute(
@@ -52,19 +54,28 @@ class RouteGenerator {
         return MaterialPageRoute(
             builder: (_) => const FullscreenPage(), settings: settings);
       
-      // case Routes.cameraPage:
-      //   return MaterialPageRoute(
-      //       builder: (_) => const CameraPage(), settings: settings);
+      case Routes.cameraPage:
+        return MaterialPageRoute(
+            builder: (_) => const CameraPage(), settings: settings);
 
-      // case Routes.previewPicturePage:
-      //   return MaterialPageRoute(
-      //       builder: (_) => const PreviewPictureage(), settings: settings);
-      // case Routes.galleryPage:
-      //   return MaterialPageRoute(
-      //       builder: (_) => const GalleryPage(), settings: settings);
-      // case Routes.searchPage:
-      //   return MaterialPageRoute(
-      //       builder: (_) => const SearchPage(), settings: settings);
+      case Routes.previewPicturePage:
+        return MaterialPageRoute(
+            builder: (_) => const PreviewPictureage(), settings: settings);
+
+      case Routes.videoTrimmerPage:
+        return MaterialPageRoute(
+            builder: (_) => const VideoTrimmerPage(), settings: settings);
+      
+      case Routes.imageEditorPage:
+        return MaterialPageRoute(
+            builder: (_) => const ImageEditorPage(), settings: settings);
+
+      case Routes.galleryPage:
+        return MaterialPageRoute(
+            builder: (_) => const GalleryPage(), settings: settings);
+      case Routes.searchPage:
+        return MaterialPageRoute(
+            builder: (_) => const SearchPage(), settings: settings);
 
       default:
         return errorRoute();

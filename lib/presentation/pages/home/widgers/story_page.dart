@@ -1,24 +1,34 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/dummy/storys.dart';
 import 'story_item.dart';
 
-class StoryPage extends StatelessWidget {
+
+class StoryPage extends StatefulWidget {
   const StoryPage({
     Key? key, required this.avatar
   }) : super(key: key);
   final ValueNotifier<String> avatar;
 
   @override
+  State<StoryPage> createState() => _StoryPageState();
+}
+
+class _StoryPageState extends State<StoryPage> {
+  @override
   Widget build(BuildContext context) {
+  
+  
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pushNamed(context, Routes.sirkelPage),
+            onTap: () {
+              
+              // Navigator.pushNamed(context, Routes.sirkelPage);
+            },
             child: Container(
               color: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 10.0),
@@ -38,7 +48,7 @@ class StoryPage extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.all(2.0),
                           child: ValueListenableBuilder<String>(
-                          valueListenable: avatar,
+                          valueListenable: widget.avatar,
                           builder: (BuildContext context, String value, Widget? child) {
                             return CircleAvatar(
                               radius: 14,

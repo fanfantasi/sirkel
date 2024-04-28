@@ -73,12 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        PersistentNavBarNavigator
-                            .pushNewScreenWithRouteSettings(context,
-                                screen: SettingPage(),
-                                settings:
-                                    RouteSettings(name: Routes.settingsPage),
-                                withNavBar: false);
+                        Navigator.pushNamed(context, Routes.settingsPage);
                       },
                       child: SvgPicture.asset(
                         'assets/svg/drawer_icon.svg',

@@ -115,9 +115,11 @@ class SignInPageState extends State<SignInPage> {
         appBar: AppBar(
           automaticallyImplyLeading: false,
           actions: [
-            IconButton(
+            if (ModalRoute.of(context)!.settings.arguments != Routes.root)
+              IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.close))
+            
           ],
         ),
         body: SingleChildScrollView(

@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:expandable_text/expandable_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -10,6 +10,7 @@ import 'package:screenshare/core/utils/extentions.dart';
 import 'package:screenshare/core/utils/utils.dart';
 import 'package:screenshare/core/widgets/circle_image_animation.dart';
 import 'package:screenshare/core/widgets/custom_lottie_screen.dart';
+import 'package:screenshare/core/widgets/loadingwidget.dart';
 import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:screenshare/domain/entities/result_entity.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
@@ -18,7 +19,6 @@ import 'package:screenshare/presentation/pages/home/widgers/appbar_reels.dart';
 import 'package:screenshare/presentation/pages/home/widgers/marquee_music.dart';
 import 'package:screenshare/presentation/pages/home/widgers/video_player_better.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:transparent_image/transparent_image.dart';
 
 import 'widgers/picture_player.dart';
 import 'widgers/user_profile.dart';
@@ -46,8 +46,8 @@ class _FullscreenPageState extends State<FullscreenPage> {
   bool titleShow = true;
   Duration? position;
   bool expanded = false;
-  bool isVideo = false;
   int lastPage = 0;
+  bool hideMusic = false;
 
   bool scrollUp = false;
   bool scrollDown = true;
@@ -132,11 +132,8 @@ class _FullscreenPageState extends State<FullscreenPage> {
       lastPage = datas.length;
       position = map[2] ?? Duration.zero;
       controller = PageController(initialPage: selectedIndex.value);
-      isVideo = datas[selectedIndex.value]
-          .pic!
-          .where((e) =>
-              e.file!.split('.').last.toLowerCase().extentionfile() == 'video')
-          .isNotEmpty;
+      hideMusic = !thisVideo(datas[selectedIndex.value].pic!.first.file??'') &&
+          datas[currentIndex].music == null;
     }
 
     super.didChangeDependencies();
@@ -166,7 +163,7 @@ class _FullscreenPageState extends State<FullscreenPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: Stack(
         alignment: Alignment.center,
         children: [
@@ -180,6 +177,18 @@ class _FullscreenPageState extends State<FullscreenPage> {
                 currentIndex = value;
                 selectedIndex.value = value;
                 isHide.value = !isData.value;
+                hideMusic = !(datas[value]
+                        .pic!
+                        .where((e) =>
+                            e.file!
+                                .split('.')
+                                .last
+                                .toLowerCase()
+                                .extentionfile() ==
+                            'video')
+                        .isNotEmpty) &&
+                    (datas[value].music == null);
+                setState(() {});
               },
               itemBuilder: (context, index) {
                 if (datas.length == index && Utilitas.isLoadMore) {
@@ -192,22 +201,12 @@ class _FullscreenPageState extends State<FullscreenPage> {
                         highlightColor: Colors.black38,
                         child: Image.asset(
                           'assets/icons/sirkel.png',
-                          height: MediaQuery.of(context).size.width * .5,
+                          height: MediaQuery.of(context).size.width * .2,
                         ),
                       ),
                     ),
                   );
                 } else {
-                  isVideo = datas[index]
-                      .pic!
-                      .where((e) =>
-                          e.file!
-                              .split('.')
-                              .last
-                              .toLowerCase()
-                              .extentionfile() ==
-                          'video')
-                      .isNotEmpty;
                   return GestureDetector(
                     onDoubleTapDown: (details) {
                       var position = details.localPosition;
@@ -219,7 +218,7 @@ class _FullscreenPageState extends State<FullscreenPage> {
                         likeAddTapScreen(datas[index]);
                       });
                     },
-                    child: fullscreenPage(index: index, value: isVideo),
+                    child: fullscreenPage(index: index, value: thisVideo(datas[index].pic!.first.file??'')),
                   );
                 }
               },
@@ -236,7 +235,7 @@ class _FullscreenPageState extends State<FullscreenPage> {
                 return AnimatedOpacity(
                     opacity: value ? 0 : 1,
                     duration: const Duration(seconds: 2),
-                    child: AppBarReels(isVideo: isVideo));
+                    child: AppBarReels(isVideo: thisVideo(datas[selectedIndex.value].pic!.first.file??'')));
               },
             ),
           ),
@@ -257,14 +256,18 @@ class _FullscreenPageState extends State<FullscreenPage> {
               ),
             ),
           //Bottom ===============
-          Positioned(
-            right: -32,
-            bottom: -10,
-            child: Lottie.asset(
-              "assets/lottie/nada.json",
-              repeat: true,
+          if (selectedIndex.value < datas.length)
+            Positioned(
+              right: -32,
+              bottom: -10,
+              child: Visibility(
+                visible: !hideMusic,
+                child: Lottie.asset(
+                  "assets/lottie/nada.json",
+                  repeat: true,
+                ),
+              ),
             ),
-          ),
           if (selectedIndex.value < datas.length)
             Positioned(
               bottom: 8,
@@ -282,9 +285,12 @@ class _FullscreenPageState extends State<FullscreenPage> {
                       rightContent()
                     ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: isMusic(),
+                  Visibility(
+                    visible: !hideMusic,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: isMusic(),
+                    ),
                   )
                 ],
               ),
@@ -317,7 +323,7 @@ class _FullscreenPageState extends State<FullscreenPage> {
   }
 
   Widget fullscreenPage({int index = 0, bool value = false}) {
-    return value
+    return thisVideo(datas[index].pic!.first.file??'')
         ? BetterPlayerWidget(
             datas: datas,
             index: index,
@@ -339,6 +345,7 @@ class _FullscreenPageState extends State<FullscreenPage> {
       children: [
         MarqueeMusic(
           isVideo: true,
+          isFullScreen: true,
           title: (datas[selectedIndex.value].music != null)
               ? datas[selectedIndex.value].music!.name
               : 'suara asli ${datas[selectedIndex.value].author?.username ?? ''}  - ',
@@ -357,16 +364,15 @@ class _FullscreenPageState extends State<FullscreenPage> {
                     radius: 12,
                     backgroundColor: Theme.of(context).colorScheme.onPrimary,
                     child: ClipOval(
-                      child: FadeInImage.memoryNetwork(
-                        placeholder: kTransparentImage,
-                        image: datas[selectedIndex.value].author?.avatar ?? '',
-                        imageCacheHeight: 28,
-                        imageCacheWidth: 28,
-                        imageErrorBuilder: (context, error, stackTrace) {
+                      child: CachedNetworkImage(imageUrl: datas[selectedIndex.value].author?.avatar ?? '', 
+                        placeholder: (context, url) {
+                          return const LoadingWidget();
+                        },
+                        errorWidget: (context, url, error) {
                           return Image.asset(
                               'assets/icons/ic-account-user.png');
                         },
-                      ),
+                      )
                     ),
                   ),
           ),
@@ -418,106 +424,106 @@ class _FullscreenPageState extends State<FullscreenPage> {
 
   Widget rightContent() {
     return Column(
-          children: [
-            ValueListenableBuilder<bool>(
-              valueListenable: isData,
-              builder: (context, value, _) {
-                return Column(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        print('liked icon');
-                      },
-                      child: SvgPicture.asset(
-                        datas[selectedIndex.value].liked ?? false
-                            ? 'assets/svg/liked.svg'
-                            : 'assets/svg/like.svg',
-                        height: 28,
-                        colorFilter: datas[selectedIndex.value].liked ?? false
-                            ? null
-                            : const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: isData,
+          builder: (context, value, _) {
+            return Column(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    print('liked icon');
+                  },
+                  child: SvgPicture.asset(
+                    datas[selectedIndex.value].liked ?? false
+                        ? 'assets/svg/liked.svg'
+                        : 'assets/svg/like.svg',
+                    height: 28,
+                    colorFilter: datas[selectedIndex.value].liked ?? false
+                        ? null
+                        : const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  ),
+                ),
+                Text(
+                  datas[selectedIndex.value].counting.likes.formatNumber(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: const Offset(.5, .5),
+                        blurRadius: 1.0,
+                        color: Colors.grey.withOpacity(.5),
                       ),
-                    ),
-                    Text(
-                      datas[selectedIndex.value].counting.likes.formatNumber(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            offset: const Offset(.5, .5),
-                            blurRadius: 1.0,
-                            color: Colors.grey.withOpacity(.5),
-                          ),
-                          Shadow(
-                              offset: const Offset(.5, .5),
-                              blurRadius: 1.0,
-                              color: Colors.grey.withOpacity(.5)),
-                        ],
-                      ),
-                    )
-                  ],
-                );
-              },
-            ),
-            const SizedBox(
-              height: 20,
-            ),
-            GestureDetector(
-              onTap: () {
-                print('Click Comment');
-              },
-              child: SvgPicture.asset(
-                'assets/svg/comment.svg',
-                height: 28,
-                colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
-              ),
-            ),
-            Text(
-              '${datas[selectedIndex.value].counting.comments}',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14),
-            ),
-            const SizedBox(
-              height: 18,
-            ),
-            GestureDetector(
-              onTap: () {
-                print('Click Share');
-              },
-              child: SvgPicture.asset(
-                'assets/svg/share.svg',
-                height: 28,
-                colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
-              ),
-            ),
-            Text(
-              '${datas[selectedIndex.value].counting.share}',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14),
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-            IconButton(
-              onPressed: () {
-                print('Click More Icon');
-              },
-              icon: Icon(
-                Icons.more_vert,
-                color: Theme.of(context).colorScheme.onPrimary,
-                size: 25,
-              ),
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-          ],
-        );
+                      Shadow(
+                          offset: const Offset(.5, .5),
+                          blurRadius: 1.0,
+                          color: Colors.grey.withOpacity(.5)),
+                    ],
+                  ),
+                )
+              ],
+            );
+          },
+        ),
+        const SizedBox(
+          height: 20,
+        ),
+        GestureDetector(
+          onTap: () {
+            print('Click Comment');
+          },
+          child: SvgPicture.asset(
+            'assets/svg/comment.svg',
+            height: 28,
+            colorFilter: ColorFilter.mode(
+                Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
+          ),
+        ),
+        Text(
+          '${datas[selectedIndex.value].counting.comments}',
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 14),
+        ),
+        const SizedBox(
+          height: 18,
+        ),
+        GestureDetector(
+          onTap: () {
+            print('Click Share');
+          },
+          child: SvgPicture.asset(
+            'assets/svg/share.svg',
+            height: 28,
+            colorFilter: ColorFilter.mode(
+                Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
+          ),
+        ),
+        Text(
+          '${datas[selectedIndex.value].counting.share}',
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 14),
+        ),
+        const SizedBox(
+          height: 8,
+        ),
+        IconButton(
+          onPressed: () {
+            print('Click More Icon');
+          },
+          icon: Icon(
+            Icons.more_vert,
+            color: Theme.of(context).colorScheme.onPrimary,
+            size: 25,
+          ),
+        ),
+        const SizedBox(
+          height: 8,
+        ),
+      ],
+    );
   }
 }

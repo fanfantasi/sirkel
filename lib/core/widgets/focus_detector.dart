@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:screenshare/core/utils/extentions.dart';
 import 'package:screenshare/core/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 

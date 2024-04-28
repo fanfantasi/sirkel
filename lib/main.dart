@@ -14,15 +14,13 @@ import 'package:screenshare/presentation/bloc/user/follow/follow_cubit.dart';
 import 'package:screenshare/presentation/bloc/user/user_cubit.dart';
 import 'package:screenshare/presentation/bloc/video/token/token_cubit.dart';
 import 'core/theme/theme.dart';
+import 'core/utils/constants.dart';
 import 'injection_container.dart' as di;
 import 'package:timeago/timeago.dart' as timeago;
 import 'presentation/bloc/auth/auth_cubit.dart';
 import 'presentation/bloc/navigation/navigation_cubit.dart';
 import 'presentation/bloc/theme/theme_cubit.dart';
 import 'presentation/routes/app_routes.dart';
-import 'package:flutter_no_internet_widget/flutter_no_internet_widget.dart';
-
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,28 +46,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => di.getIt<ThemeCubit>()..initialAppTheme()),
-        BlocProvider(create: (_) => di.getIt<NavigationCubit>()),
-        BlocProvider(create: (_) => di.getIt<ContentCubit>()),
-        BlocProvider(create: (_) => di.getIt<AuthCubit>()),
-        BlocProvider(create: (_) => di.getIt<UserCubit>()),
-        BlocProvider(create: (_) => di.getIt<LikedCubit>()),
-        BlocProvider(create: (_) => di.getIt<FollowCubit>()),
-        BlocProvider(create: (_) => di.getIt<MusicCubit>()),
-        BlocProvider(create: (_) => di.getIt<VideoTokenCubit>()),
-        BlocProvider(create: (_) => di.getIt<PostContentCubit>()),
-      ],
-      child: BlocBuilder<ThemeCubit, ThemeState>(
-        builder: (context, themeState) {
-          return InternetWidget(
-            offline: const FullScreenWidget(),
-            // ignore: avoid_print
-            whenOffline: () => print('No Internet'),
-            // ignore: avoid_print
-            whenOnline: () => print('Connected to internet'),
-            loadingWidget: const Center(child: Text('Loading')),
-            online: MaterialApp(
+        providers: [
+          BlocProvider(
+              create: (_) => di.getIt<ThemeCubit>()..initialAppTheme()),
+          BlocProvider(create: (_) => di.getIt<NavigationCubit>()),
+          BlocProvider(create: (_) => di.getIt<ContentCubit>()),
+          BlocProvider(create: (_) => di.getIt<AuthCubit>()),
+          BlocProvider(create: (_) => di.getIt<UserCubit>()),
+          BlocProvider(create: (_) => di.getIt<LikedCubit>()),
+          BlocProvider(create: (_) => di.getIt<FollowCubit>()),
+          BlocProvider(create: (_) => di.getIt<MusicCubit>()),
+          BlocProvider(create: (_) => di.getIt<VideoTokenCubit>()),
+          BlocProvider(create: (_) => di.getIt<PostContentCubit>()),
+        ],
+        child: BlocBuilder<ThemeCubit, ThemeState>(
+          builder: (context, themeState) {
+            return MaterialApp(
               debugShowCheckedModeBanner: true,
               title: 'Sirkel',
               supportedLocales: context.supportedLocales,
@@ -77,15 +69,12 @@ class MyApp extends StatelessWidget {
               locale: context.locale,
               theme: ThemeModel().lightTheme,
               darkTheme: ThemeModel().darkTheme,
-              themeMode: context
-                  .select((ThemeCubit themeCubit) => themeCubit.state.themeMode),
+              themeMode: context.select(
+                  (ThemeCubit themeCubit) => themeCubit.state.themeMode),
               onGenerateRoute: RouteGenerator.generateRoute,
-              // initialRoute: Routes.root,
-              // home: const AppPage(),
-            ),
-          );
-        },
-      )
-    );
+              initialRoute: Routes.root,
+            );
+          },
+        ));
   }
 }

@@ -18,6 +18,8 @@ class Routes {
 
   static const cameraPage = '/camera-page';
   static const previewPicturePage = '/preview-picture-page';
+  static const videoTrimmerPage = '/video-trimmer-page';
+  static const imageEditorPage = '/image-editor-page';
 
 
   static const galleryPage = '/gallery-page';

@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/core/utils/extentions.dart';
@@ -20,8 +19,8 @@ import 'package:screenshare/core/widgets/smooth_video_progress_better.dart';
 import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:screenshare/domain/entities/result_entity.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
+import 'package:shimmer/shimmer.dart';
 
-import '../fullscreen_page.dart';
 import 'marquee_music.dart';
 import 'user_profile.dart';
 
@@ -64,12 +63,45 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
     isPlaying.value = false;
     BetterPlayerConfiguration betterPlayerConfiguration =
         BetterPlayerConfiguration(
-      fit: BoxFit.fill,
+      fit: BoxFit.contain,
       aspectRatio: Configs().aspectRatio(
           data!.pic!.first.width ?? 0, data!.pic!.first.height ?? 0),
       handleLifecycle: true,
       looping: true,
       autoDispose: true,
+      placeholder: Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(
+            key: Key(data!.id.toString()),
+            imageUrl:
+                '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}?tn=320',
+            fit: BoxFit.contain,
+            cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
+            placeholder: (context, url) {
+              return LoadingWidget(
+                leftcolor: Theme.of(context).primaryColor,
+              );
+            },
+            errorWidget: (context, url, error) {
+              return Image.asset(
+                'assets/image/no-image.jpg',
+                height: MediaQuery.of(context).size.width * .75,
+                fit: BoxFit.cover,
+              );
+            },
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: LoadingWidget(
+              rightcolor: Colors.pink,
+            ),
+          ),
+        ],
+      ),
       expandToFill: Configs().aspectRatio(
                   data!.pic!.first.width ?? 0, data!.pic!.first.height ?? 0) >
               1
@@ -107,8 +139,21 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
               fit: BoxFit.cover,
               cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
               placeholder: (context, url) {
-                return LoadingWidget(
-                  leftcolor: Theme.of(context).primaryColor,
+                return AspectRatio(
+                  aspectRatio: Configs().aspectRatio(data!.pic!.first.width??0, data!.pic!.first.height??0),
+                  child: Container(
+                    color: Colors.black12,
+                    child: Center(
+                      child: Shimmer.fromColors(
+                        baseColor: Colors.grey,
+                        highlightColor: Colors.black38,
+                        child: Image.asset(
+                          'assets/icons/sirkel.png',
+                          height: MediaQuery.of(context).size.width * .2,
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               },
               errorWidget: (context, url, error) {
@@ -134,10 +179,12 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
       await _betterPlayerController.setupDataSource(dataSource);
       if (widget.play) {
         _betterPlayerController.play();
-        if (widget.positionVideo != null){
-          _betterPlayerController.seekTo(widget.positionVideo! - const Duration(seconds: 1));
+        isPlaying.value = false;
+        if (widget.positionVideo != null) {
+          _betterPlayerController
+              .seekTo(widget.positionVideo! - const Duration(seconds: 1));
         }
-        
+
         isPlaying.value = true;
       }
     }
@@ -147,12 +194,16 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
   void didUpdateWidget(BetterPlayerWidget oldWidget) {
     if (oldWidget.play != widget.play) {
       if (widget.play) {
-        _betterPlayerController.play();
+        if (_betterPlayerController.isVideoInitialized()!) {
+          _betterPlayerController.play();
+          isPlaying.value = true;
+        }
       } else {
-        _betterPlayerController.pause();
+        if (_betterPlayerController.isVideoInitialized()!) {
+          _betterPlayerController.pause();
+        }
       }
     }
-
 
     super.didUpdateWidget(oldWidget);
   }
@@ -169,9 +220,6 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
   void likeAddTapScreen(ResultContentEntity selectedData) async {
     ResultEntity? result;
     if (selectedData.likedId == null) {
-      // result = await context
-      //     .read<LikedCubit>()
-      //     .liked(id: selectedData.likedId, postId: selectedData.id);
       result = await context.read<LikedCubit>().liked(postId: selectedData.id);
       if (result != null) {
         data!.liked = true;
@@ -180,22 +228,6 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
         isData.value = data!.liked ?? false;
       }
     }
-    //  else {
-    //   result = await context.read<LikedCubit>().liked(postId: selectedData.id);
-    // }
-    // if (result != null) {
-    //   if (selectedData.likedId != null) {
-    //     data!.liked = false;
-    //     data!.likedId = null;
-    //     data!.counting.likes -= 1;
-    //     isData.value = data!.liked ?? true;
-    //   } else {
-    //     data!.liked = true;
-    //     data!.likedId = result.returned ?? '';
-    //     data!.counting.likes += 1;
-    //     isData.value = data!.liked ?? false;
-    //   }
-    // }
   }
 
   @override
@@ -247,25 +279,13 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
               behavior: HitTestBehavior.opaque,
               onTap: () async {
                 if (!widget.isFullScreen) {
-                  // _betterPlayerController.pause();
-                  Utilitas.jumpToTop = false;
-                  await PersistentNavBarNavigator
-                      .pushNewScreenWithRouteSettings(context,
-                          screen: const FullscreenPage(),
-                          settings: RouteSettings(
-                            name: Routes.fullscreenPage,
-                            arguments: [
-                              widget.index,
-                              widget.datas,
-                              await _betterPlayerController
-                                  .videoPlayerController!.position
-                            ],
-                          ),
-                          withNavBar: true,
-                          pageTransitionAnimation:
-                              PageTransitionAnimation.fade);
-                  // _betterPlayerController.play();
-                  // Utilitas.jumpToTop = true;
+                  Navigator.pushNamed(context, Routes.fullscreenPage,
+                      arguments: [
+                        widget.index,
+                        widget.datas,
+                        await _betterPlayerController
+                            .videoPlayerController!.position
+                      ]);
                 }
               },
               onDoubleTapDown: (details) {
@@ -278,54 +298,98 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                   likeAddTapScreen(data!);
                 });
               },
-              child: Stack(
-                children: [
-                  BetterPlayer(controller: _betterPlayerController),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: ValueListenableBuilder(
-                      valueListenable:
-                          _betterPlayerController.videoPlayerController!,
-                      builder: (context, value, child) {
-                        if (_betterPlayerController
-                            .videoPlayerController!.value.initialized) {
-                          return SmoothVideoProgressBetter(
-                            controller: _betterPlayerController,
-                            builder: (context, position, duration, child) =>
-                                Theme(
-                              data: ThemeData.from(
-                                colorScheme: ColorScheme.fromSeed(
-                                    seedColor: Theme.of(context).primaryColor),
-                              ),
-                              child: SliderTheme(
-                                data: SliderThemeData(
-                                    trackHeight: 1,
-                                    trackShape: CustomTrackShape(),
-                                    thumbShape: SliderComponentShape.noThumb),
-                                child: Slider(
-                                  onChangeStart: (_) =>
-                                      _betterPlayerController.pause(),
-                                  onChangeEnd: (_) =>
-                                      _betterPlayerController.play(),
-                                  onChanged: (value) =>
-                                      _betterPlayerController.seekTo(Duration(
-                                          milliseconds: value.toInt())),
-                                  value: position.inMilliseconds.toDouble(),
-                                  min: 0,
-                                  max: duration.inMilliseconds.toDouble(),
+              child: ValueListenableBuilder<bool>(
+                  valueListenable: isPlaying,
+                  builder: (context, value, child) {
+                    if (!isPlaying.value) {
+                      return CachedNetworkImage(
+                        key: Key(data!.id.toString()),
+                        imageUrl:
+                            '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}?tn=320',
+                        fit: BoxFit.cover,
+                        cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
+                        placeholder: (context, url) {
+                          return AspectRatio(
+                            aspectRatio: Configs().aspectRatio(data!.pic!.first.width??0, data!.pic!.first.height??0),
+                            child: Container(
+                              color: Colors.black12,
+                              child: Center(
+                                child: Shimmer.fromColors(
+                                  baseColor: Colors.grey,
+                                  highlightColor: Colors.black38,
+                                  child: Image.asset(
+                                    'assets/icons/sirkel.png',
+                                    height: MediaQuery.of(context).size.width * .2,
+                                  ),
                                 ),
                               ),
                             ),
                           );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                        },
+                        errorWidget: (context, url, error) {
+                          return Image.asset(
+                            'assets/image/no-image.jpg',
+                            height: MediaQuery.of(context).size.width * .75,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      );
+                    }
+                    return Stack(
+                      children: [
+                        BetterPlayer(controller: _betterPlayerController),
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: ValueListenableBuilder(
+                            valueListenable:
+                                _betterPlayerController.videoPlayerController!,
+                            builder: (context, value, child) {
+                              if (_betterPlayerController
+                                  .videoPlayerController!.value.initialized) {
+                                return SmoothVideoProgressBetter(
+                                  controller: _betterPlayerController,
+                                  builder:
+                                      (context, position, duration, child) =>
+                                          Theme(
+                                    data: ThemeData.from(
+                                      colorScheme: ColorScheme.fromSeed(
+                                          seedColor:
+                                              Theme.of(context).primaryColor),
+                                    ),
+                                    child: SliderTheme(
+                                      data: SliderThemeData(
+                                          trackHeight: 1,
+                                          trackShape: CustomTrackShape(),
+                                          thumbShape:
+                                              SliderComponentShape.noThumb),
+                                      child: Slider(
+                                        onChangeStart: (_) =>
+                                            _betterPlayerController.pause(),
+                                        onChangeEnd: (_) =>
+                                            _betterPlayerController.play(),
+                                        onChanged: (value) =>
+                                            _betterPlayerController.seekTo(
+                                                Duration(
+                                                    milliseconds:
+                                                        value.toInt())),
+                                        value:
+                                            position.inMilliseconds.toDouble(),
+                                        min: 0,
+                                        max: duration.inMilliseconds.toDouble(),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
             ),
             Positioned(
               left: 0,
@@ -336,19 +400,11 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                 color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
-            // Positioned(
-            //   right: 12,
-            //   bottom: 10,
-            //   child: SoundMusic(
-            //     chewieController: chewieController,
-            //     isVideo: true,
-            //   ),
-            // ),
             if (data!.music != null && (data!.mentions?.isEmpty ?? false))
               Positioned(
                 left: 18,
                 right: MediaQuery.of(context).size.width -
-                    MediaQuery.of(context).size.width * .9,
+                    MediaQuery.of(context).size.width,
                 bottom: 12,
                 child: MarqueeMusic(
                   title: data!.music?.name ?? '',
@@ -588,6 +644,40 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
               child: ValueListenableBuilder<bool>(
                 valueListenable: isPlaying,
                 builder: (context, value, child) {
+                  if (!isPlaying.value){
+                    return CachedNetworkImage(
+                        key: Key(data!.id.toString()),
+                        imageUrl:
+                            '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}?tn=320',
+                        fit: BoxFit.cover,
+                        cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
+                        placeholder: (context, url) {
+                          return AspectRatio(
+                            aspectRatio: Configs().aspectRatio(data!.pic!.first.width??0, data!.pic!.first.height??0),
+                            child: Container(
+                              color: Colors.black12,
+                              child: Center(
+                                child: Shimmer.fromColors(
+                                  baseColor: Colors.grey,
+                                  highlightColor: Colors.black38,
+                                  child: Image.asset(
+                                    'assets/icons/sirkel.png',
+                                    height: MediaQuery.of(context).size.width * .2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        errorWidget: (context, url, error) {
+                          return Image.asset(
+                            'assets/image/no-image.jpg',
+                            height: MediaQuery.of(context).size.width * .75,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      );
+                  }
                   return Transform.scale(
                     scale: getScale(),
                     child: BetterPlayer(controller: _betterPlayerController),
@@ -634,183 +724,6 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                 },
               ),
             ),
-            // ValueListenableBuilder<bool>(
-            //   valueListenable: isVisibility,
-            //   builder: (context, value, child) => AnimatedOpacity(
-            //     opacity: value ? 1.0 : 0.0,
-            //     duration: const Duration(milliseconds: 300),
-            //     child: Stack(
-            //       children: [
-            //         Positioned(
-            //           right: 0,
-            //           bottom: 0,
-            //           child: Padding(
-            //             padding: const EdgeInsets.symmetric(
-            //               horizontal: 15,
-            //             ),
-            //             child: Column(
-            //               children: [
-            //                 ValueListenableBuilder<bool>(
-            //                   valueListenable: isData,
-            //                   builder: (context, value, _) {
-            //                     return Column(
-            //                       children: [
-            //                         GestureDetector(
-            //                           onTap: () {
-            //                             print('liked icon');
-            //                           },
-            //                           child: SvgPicture.asset(
-            //                             data!.liked ?? false
-            //                                 ? 'assets/svg/loved_icon.svg'
-            //                                 : 'assets/svg/love_icon.svg',
-            //                             height: 25,
-            //                             colorFilter: data!.liked ?? false
-            //                                 ? null
-            //                                 : const ColorFilter.mode(
-            //                                     Colors.white, BlendMode.srcIn),
-            //                           ),
-            //                         ),
-            //                         Text(
-            //                           data!.counting.likes.formatNumber(),
-            //                           style: TextStyle(
-            //                             color: Colors.white,
-            //                             shadows: [
-            //                               Shadow(
-            //                                 offset: const Offset(.5, .5),
-            //                                 blurRadius: 1.0,
-            //                                 color: Colors.grey.withOpacity(.5),
-            //                               ),
-            //                               Shadow(
-            //                                   offset: const Offset(.5, .5),
-            //                                   blurRadius: 1.0,
-            //                                   color:
-            //                                       Colors.grey.withOpacity(.5)),
-            //                             ],
-            //                           ),
-            //                         )
-            //                       ],
-            //                     );
-            //                   },
-            //                 ),
-            //                 const SizedBox(
-            //                   height: 20,
-            //                 ),
-            //                 GestureDetector(
-            //                   onTap: () {
-            //                     print('Click Comment');
-            //                   },
-            //                   child: SvgPicture.asset(
-            //                     'assets/svg/comment_icon.svg',
-            //                     height: 28,
-            //                     colorFilter: ColorFilter.mode(
-            //                         Theme.of(context).colorScheme.onPrimary,
-            //                         BlendMode.srcIn),
-            //                   ),
-            //                 ),
-            //                 const SizedBox(
-            //                   height: 7,
-            //                 ),
-            //                 Text(
-            //                   '${data!.counting.comments}',
-            //                   style: TextStyle(
-            //                       color:
-            //                           Theme.of(context).colorScheme.onPrimary,
-            //                       fontWeight: FontWeight.w600,
-            //                       fontSize: 14),
-            //                 ),
-            //                 const SizedBox(
-            //                   height: 20,
-            //                 ),
-            //                 GestureDetector(
-            //                   onTap: () {
-            //                     print('Click Share');
-            //                   },
-            //                   child: SvgPicture.asset(
-            //                     'assets/svg/message_icon.svg',
-            //                     height: 28,
-            //                   ),
-            //                 ),
-            //                 const SizedBox(
-            //                   height: 7,
-            //                 ),
-            //                 Text(
-            //                   '${data!.counting.share}',
-            //                   style: TextStyle(
-            //                       color:
-            //                           Theme.of(context).colorScheme.onPrimary,
-            //                       fontWeight: FontWeight.w600,
-            //                       fontSize: 14),
-            //                 ),
-            //                 const SizedBox(
-            //                   height: 20,
-            //                 ),
-            //                 IconButton(
-            //                     onPressed: () {
-            //                       print('Click More Icon');
-            //                     },
-            //                     icon: Icon(
-            //                       Icons.more_vert,
-            //                       color:
-            //                           Theme.of(context).colorScheme.onPrimary,
-            //                       size: 25,
-            //                     )),
-            //                 // if (data!.music != null)
-            //                 //   Column(
-            //                 //     children: [
-            //                 //       const SizedBox(
-            //                 //         height: 20,
-            //                 //       ),
-            //                 //       Padding(
-            //                 //         padding: const EdgeInsets.all(2.0),
-            //                 //         child: SizedBox(
-            //                 //           height: 42,
-            //                 //           width: 42,
-            //                 //           child: CircleImageAnimation(
-            //                 //             child: SvgPicture.asset(
-            //                 //               'assets/svg/disc.svg',
-            //                 //               // height: 28,
-            //                 //             ),
-            //                 //           ),
-            //                 //         ),
-            //                 //       ),
-            //                 //     ],
-            //                 //   ),
-            //                 const SizedBox(
-            //                   height: 20,
-            //                 ),
-            //               ],
-            //             ),
-            //           ),
-            //         ),
-            //         if (data!.music != null)
-            //           Positioned(
-            //             right: -32,
-            //             bottom: -10,
-            //             child: Lottie.asset(
-            //               "assets/lottie/nada.json",
-            //               repeat: true,
-            //             ),
-            //           ),
-            //       ],
-            //     ),
-            //   ),
-            // ),
-            // ValueListenableBuilder<bool>(
-            //   valueListenable: isLiked,
-            //   builder: (context, value, child) {
-            //     return isLiked.value
-            //         ? Positioned(
-            //             top: positionDxDy.dy - 110,
-            //             left: positionDxDy.dx - 110,
-            //             child: SizedBox(
-            //                 height: 220,
-            //                 child: CustomLottieScreen(
-            //                   onAnimationFinished: () {},
-            //                 )),
-            //           )
-            //         : const SizedBox.shrink();
-            //   },
-            // ),
           ],
         ),
       ),

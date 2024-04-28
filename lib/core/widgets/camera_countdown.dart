@@ -53,7 +53,7 @@ class _CameraCountdownState extends State<CameraCountdown> {
     return Container(
       width: kToolbarHeight * 2,
       margin: const EdgeInsets.all(8.0),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.0),
         color: Theme.of(context).colorScheme.primary.withOpacity(.5)
