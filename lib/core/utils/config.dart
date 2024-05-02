@@ -3,7 +3,6 @@ import 'package:camera/camera.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:screenshare/presentation/bloc/auth/auth_cubit.dart';
 
 import 'constants.dart';
@@ -16,10 +15,10 @@ enum Proccess { pending, done, filed }
 
 class Configs {
   static const appName = 'Screen Share';
-  static const baseUrl = 'http://192.168.1.4:3100/v1';
-  static const baseUrlPic = 'http://192.168.1.4:3100/uploads/pictures/';
-  static const baseUrlVid = 'http://192.168.1.4:3100/uploads/videos/';
-  static const baseUrlAudio = 'http://192.168.1.4:3100/uploads/music/';
+  static const baseUrl = 'http://192.168.18.39:3100/v1';
+  static const baseUrlPic = 'http://192.168.18.39:3100/uploads/pictures/';
+  static const baseUrlVid = 'http://192.168.18.39:3100/uploads/videos/';
+  static const baseUrlAudio = 'http://192.168.18.39:3100/uploads/music/';
   static const mapBox = 'pk.eyJ1IjoiaXJmYW5qdW5pb3IiLCJhIjoiY2t5c2N2dHM4MTJsdjJvcGVkbTNhbzRtbSJ9.VlgaQ_pgeQZEnUwuzK8Fow';
   static ScrollController scrollControllerHome = ScrollController();
   

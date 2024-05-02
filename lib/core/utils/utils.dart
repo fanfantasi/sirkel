@@ -1,3 +1,5 @@
+import 'package:path_provider/path_provider.dart';
+
 class Utilitas {
   static String scrolling = 'stopped';
   static bool isMute = true;

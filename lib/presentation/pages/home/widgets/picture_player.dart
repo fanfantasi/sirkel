@@ -28,7 +28,7 @@ import 'user_profile.dart';
 class PicturePlayerWidget extends StatefulWidget {
   final List<ResultContentEntity> datas;
   final int index;
-  final bool play;
+  // final bool play;
   final bool isFullScreen;
   final String? thumbnail;
   final Duration? positionAudio;
@@ -36,7 +36,7 @@ class PicturePlayerWidget extends StatefulWidget {
       {super.key,
       required this.datas,
       required this.index,
-      required this.play,
+      // required this.play,
       required this.isFullScreen,
       this.positionAudio,
       this.thumbnail});
@@ -57,6 +57,9 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
   final ValueNotifier<bool> isData = ValueNotifier<bool>(false);
 
   Timer? timer;
+  bool play = false;
+  int playIndex = -1;
+  bool portrait = true;
   final debouncer = Debouncer(milliseconds: 1000);
 
   @override
@@ -64,11 +67,15 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
     data = widget.datas[widget.index];
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((v) async {
+      // print('data ${data?.author?.name??''}');
       if (data!.music != null) {
         playMusic();
-        initializationPlayer();
       }
-
+      // else{
+      //   if (player.playing){
+      //     player.stop();
+      //   }
+      // }
       isData.value = data?.liked ?? false;
     });
 
@@ -87,38 +94,36 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
           case ProcessingState.loading:
           case ProcessingState.buffering:
           case ProcessingState.ready:
+            // if (!player.pl)
             player.setVolume(Utilitas.isMute ? 0 : 1);
             break;
           case ProcessingState.completed:
         }
       }
     });
-    player.setLoopMode(LoopMode.one);
-    player.seek(widget.positionAudio ?? Duration.zero);
+    // await player.play();
+    await player.setLoopMode(LoopMode.one);
+    await player.seek(widget.positionAudio ?? Duration.zero);
   }
 
   Future initializationPlayer() async {
-    if (widget.play) {
-      // player.seek(widget.positionAudio ?? Duration.zero);
-
-      player.play();
-    }
+    player.play();
   }
 
-  @override
-  void didUpdateWidget(PicturePlayerWidget oldWidget) {
-    if (oldWidget.play != widget.play) {
-      if (data!.music != null) {
-        if (widget.play) {
-          player.seek(widget.positionAudio ?? Duration.zero);
-          player.play();
-        } else {
-          player.pause();
-        }
-      }
-    }
-    super.didUpdateWidget(oldWidget);
-  }
+  // @override
+  // void didUpdateWidget(PicturePlayerWidget oldWidget) {
+  //   if (oldWidget.play != widget.play) {
+  //     if (data!.music != null) {
+  //       if (widget.play) {
+  //         player.seek(widget.positionAudio ?? Duration.zero);
+  //         player.play();
+  //       } else {
+  //         player.pause();
+  //       }
+  //     }
+  //   }
+  //   super.didUpdateWidget(oldWidget);
+  // }
 
   Future<void> stop() async {
     if (data!.music != null) {
@@ -133,16 +138,18 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
     double videoRatio = Configs()
         .aspectRatio(data!.pic!.first.width!, data!.pic!.first.height!);
     if (videoRatio > 1) {
-      return (videoRatio / videoRatio) * 1.1;
+        portrait = false;
+      return videoRatio * 1.2;
     } else {
-      Size size = MediaQuery.of(context).size;
-      return videoRatio / (size.width / size.height);
+      portrait = true;
+      return videoRatio / .9;
     }
   }
 
   @override
   void dispose() {
     player.stop();
+    player.dispose();
     debouncer.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -153,19 +160,15 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
     super.didChangeAppLifecycleState(state);
     switch (state) {
       case AppLifecycleState.inactive:
-        debugPrint("========= inactive");
-        player.pause();
+        player.stop();
         break;
       case AppLifecycleState.resumed:
-        debugPrint("========= resumed");
         player.play();
         break;
       case AppLifecycleState.paused:
-        debugPrint("========= paused");
-        player.pause();
+        player.stop();
         break;
       case AppLifecycleState.detached:
-        debugPrint("========= detached");
         break;
       default:
         debugPrint("========= $state");
@@ -208,42 +211,31 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
 
   Widget landingPage() {
     return FocusDetector(
+      // index: widget.index,
       onFocusLost: () {
-        debugPrint(
-          'Focus Lost.'
-          '\nTriggered when either [onVisibilityLost] or [onForegroundLost] '
-          'is called.'
-          '\nEquivalent to onPause() on Android or viewDidDisappear() on iOS.',
-        );
-      },
-      onFocusGained: () {
-        if (player.processingState == ProcessingState.ready) {
-          player.play();
+        player.stop();
+        if (playIndex == -1) {
+          playIndex = widget.index;
         }
       },
-      onVisibilityLost: () {
-        player.pause();
+      onFocusGained: () {
+        if (playIndex == widget.index) {
+        } else {
+          playIndex = widget.index;
+        }
+        if (playIndex == widget.index) {
+          player.play();
+        } else {
+          player.stop();
+        }
       },
-      onVisibilityGained: () {
-        debugPrint(
-          'Visibility Gained.'
-          '\nIt means the widget is now visible within your app.',
-        );
-      },
+      onVisibilityLost: () {},
+      onVisibilityGained: () {},
       onForegroundLost: () {
-        debugPrint(
-          'Foreground Lost.'
-          '\nIt means, for example, that the user sent your app to the background by opening '
-          'another app or turned off the device\'s screen while your '
-          'widget was visible.',
-        );
+        player.dispose();
       },
       onForegroundGained: () {
-        debugPrint(
-          'Foreground Gained.'
-          '\nIt means, for example, that the user switched back to your app or turned the '
-          'device\'s screen back on while your widget was visible.',
-        );
+        player.play();
       },
       // isWidgetTest: false,
       child: Column(
@@ -441,80 +433,71 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: FocusDetector(
+        // index: widget.index,
         onFocusLost: () {
-          debugPrint(
-            'Focus Lost.'
-            '\nTriggered when either [onVisibilityLost] or [onForegroundLost] '
-            'is called.'
-            '\nEquivalent to onPause() on Android or viewDidDisappear() on iOS.',
-          );
-        },
-        onFocusGained: () {
-          if (player.processingState == ProcessingState.ready) {
-            player.play();
+          player.stop();
+          if (playIndex == -1) {
+            playIndex = widget.index;
           }
         },
-        onVisibilityLost: () {
-          player.pause();
+        onFocusGained: () {
+          if (playIndex == widget.index) {
+          } else {
+            playIndex = widget.index;
+          }
+          if (playIndex == widget.index) {
+            player.play();
+          } else {
+            player.stop();
+          }
         },
-        onVisibilityGained: () {
-          debugPrint(
-            'Visibility Gained.'
-            '\nIt means the widget is now visible within your app.',
-          );
-        },
+        onVisibilityLost: () {},
+        onVisibilityGained: () {},
         onForegroundLost: () {
-          debugPrint(
-            'Foreground Lost.'
-            '\nIt means, for example, that the user sent your app to the background by opening '
-            'another app or turned off the device\'s screen while your '
-            'widget was visible.',
-          );
+          player.dispose();
         },
         onForegroundGained: () {
-          debugPrint(
-            'Foreground Gained.'
-            '\nIt means, for example, that the user switched back to your app or turned the '
-            'device\'s screen back on while your widget was visible.',
-          );
+          player.play();
         },
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Transform.scale(
-              scale: getScale(),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  isClickMuted.value = true;
-                  Utilitas.isMute = !Utilitas.isMute;
-                  Utilitas.scrolling = 'scroll is stopped';
-                  if (Utilitas.isMute) {
-                    player.setVolume(0);
-                  } else {
-                    player.setVolume(1);
-                  }
-                },
-                onLongPress: () {
-                  timer = Timer.periodic(const Duration(milliseconds: 100),
-                      (timer) {
-                    player.pause();
-                  });
-                },
-                onLongPressEnd: (details) {
-                  timer!.cancel();
-                  player.play();
-                },
-                child: PageView.builder(
-                  itemCount: data!.pic!.length,
-                  physics: const BouncingScrollPhysics(),
-                  scrollDirection: Axis.horizontal,
-                  controller: _controllerPic,
-                  itemBuilder: (context, i) {
-                    return CachedNetworkImage(
-                      imageUrl: '${Configs.baseUrlPic}/${data!.pic?[i].file}',
-                      width: double.infinity,
-                      fit: BoxFit.fitWidth,
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                isClickMuted.value = true;
+                Utilitas.isMute = !Utilitas.isMute;
+                Utilitas.scrolling = 'scroll is stopped';
+                if (Utilitas.isMute) {
+                  player.setVolume(0);
+                } else {
+                  player.setVolume(1);
+                }
+              },
+              onLongPress: () {
+                timer = Timer.periodic(const Duration(milliseconds: 100),
+                    (timer) {
+                  player.pause();
+                });
+              },
+              onLongPressEnd: (details) {
+                timer!.cancel();
+                player.play();
+              },
+              child: PageView.builder(
+                itemCount: data!.pic!.length,
+                physics: const BouncingScrollPhysics(),
+                scrollDirection: Axis.horizontal,
+                controller: _controllerPic,
+                itemBuilder: (context, i) {
+                  return AspectRatio(
+                    aspectRatio: getScale(),
+                    child: CachedNetworkImage(
+                      imageUrl:
+                          '${Configs.baseUrlPic}/${data!.pic?[i].file}?tn=640',
+                      memCacheHeight: portrait ? 640.cacheSize(context) : 480.cacheSize(context),
+                      memCacheWidth: portrait ? 480.cacheSize(context) : 640.cacheSize(context),
+                      fit: portrait ? BoxFit.cover : BoxFit.contain,
                       placeholder: (context, url) {
                         return Container(
                           color: Colors.black12,
@@ -536,9 +519,9 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                           fit: BoxFit.cover,
                         );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
             if ((data!.pic?.length ?? 0) > 1)
@@ -608,7 +591,8 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
     return Stack(
       children: [
         AspectRatio(
-          aspectRatio: getScale(),
+          aspectRatio: Configs()
+        .aspectRatio(data.pic!.first.width!, data.pic!.first.height!),
           child: PageView.builder(
             itemCount: data.pic!.length,
             physics: const BouncingScrollPhysics(),
@@ -621,14 +605,14 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
-                        player.pause();
+                        // player.pause();
                         await Navigator.pushNamed(
                             context, Routes.fullscreenPage, arguments: [
                           widget.index,
                           widget.datas,
                           player.position
                         ]);
-                        player.play();
+                        // player.play();
                       },
                       onDoubleTapDown: (details) {
                         var position = details.localPosition;
@@ -644,10 +628,12 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                         imageUrl:
                             '${Configs.baseUrlPic}/${data.pic?[i].file}?tn=320',
                         fit: BoxFit.cover,
-                        cacheKey: data.pic?[i].file,
-                        width: double.infinity,
-                        memCacheWidth:
-                            (MediaQuery.of(context).size.width).toInt(),
+                        memCacheHeight: portrait
+                            ? 640.cacheSize(context)
+                            : 320.cacheSize(context),
+                        memCacheWidth: portrait
+                            ? 480.cacheSize(context)
+                            : 240.cacheSize(context),
                         placeholder: (context, url) {
                           return Container(
                             color: Colors.black12,
@@ -657,7 +643,8 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                                 highlightColor: Colors.black38,
                                 child: Image.asset(
                                   'assets/icons/sirkel.png',
-                                  height: MediaQuery.of(context).size.width * .2,
+                                  height:
+                                      MediaQuery.of(context).size.width * .2,
                                 ),
                               ),
                             ),

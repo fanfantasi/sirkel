@@ -15,13 +15,13 @@ import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:screenshare/domain/entities/result_entity.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
-import 'package:screenshare/presentation/pages/home/widgers/appbar_reels.dart';
-import 'package:screenshare/presentation/pages/home/widgers/marquee_music.dart';
-import 'package:screenshare/presentation/pages/home/widgers/video_player_better.dart';
+import 'package:screenshare/presentation/pages/home/widgets/appbar_reels.dart';
+import 'package:screenshare/presentation/pages/home/widgets/marquee_music.dart';
+import 'package:screenshare/presentation/pages/home/widgets/video_player_better.dart';
 import 'package:shimmer/shimmer.dart';
 
-import 'widgers/picture_player.dart';
-import 'widgers/user_profile.dart';
+import 'widgets/picture_player.dart';
+import 'widgets/user_profile.dart';
 
 class FullscreenPage extends StatefulWidget {
   const FullscreenPage({super.key});
@@ -132,8 +132,9 @@ class _FullscreenPageState extends State<FullscreenPage> {
       lastPage = datas.length;
       position = map[2] ?? Duration.zero;
       controller = PageController(initialPage: selectedIndex.value);
-      hideMusic = !thisVideo(datas[selectedIndex.value].pic!.first.file??'') &&
-          datas[currentIndex].music == null;
+      hideMusic =
+          !thisVideo(datas[selectedIndex.value].pic!.first.file ?? '') &&
+              datas[currentIndex].music == null;
     }
 
     super.didChangeDependencies();
@@ -171,8 +172,9 @@ class _FullscreenPageState extends State<FullscreenPage> {
             child: PageView.builder(
               itemCount: Utilitas.isLoadMore ? datas.length + 1 : datas.length,
               controller: controller,
-              physics: const BouncingScrollPhysics(),
+              physics: const CustomPageViewScrollPhysics(),
               scrollDirection: Axis.vertical,
+              padEnds: false,
               onPageChanged: (value) {
                 currentIndex = value;
                 selectedIndex.value = value;
@@ -218,7 +220,9 @@ class _FullscreenPageState extends State<FullscreenPage> {
                         likeAddTapScreen(datas[index]);
                       });
                     },
-                    child: fullscreenPage(index: index, value: thisVideo(datas[index].pic!.first.file??'')),
+                    child: fullscreenPage(
+                        index: index,
+                        value: thisVideo(datas[index].pic!.first.file ?? '')),
                   );
                 }
               },
@@ -226,19 +230,23 @@ class _FullscreenPageState extends State<FullscreenPage> {
           ),
 
           //Top ====================
-          Positioned(
-            top: kToolbarHeight - 12,
-            left: 0,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: isHideScroll,
-              builder: (context, value, child) {
-                return AnimatedOpacity(
-                    opacity: value ? 0 : 1,
-                    duration: const Duration(seconds: 2),
-                    child: AppBarReels(isVideo: thisVideo(datas[selectedIndex.value].pic!.first.file??'')));
-              },
+          if (selectedIndex.value < datas.length)
+            Positioned(
+              top: kToolbarHeight - 12,
+              left: 0,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: isHideScroll,
+                builder: (context, value, child) {
+                  return AnimatedOpacity(
+                      opacity: value ? 0 : 1,
+                      duration: const Duration(seconds: 2),
+                      child: AppBarReels(
+                          isVideo: thisVideo(
+                              datas[selectedIndex.value].pic!.first.file ??
+                                  '')));
+                },
+              ),
             ),
-          ),
           if (expanded)
             Container(
               height: double.maxFinite,
@@ -323,18 +331,19 @@ class _FullscreenPageState extends State<FullscreenPage> {
   }
 
   Widget fullscreenPage({int index = 0, bool value = false}) {
-    return thisVideo(datas[index].pic!.first.file??'')
+    return thisVideo(datas[index].pic!.first.file ?? '')
         ? BetterPlayerWidget(
+            key: Key(datas[index].id.toString()),
             datas: datas,
             index: index,
             isFullScreen: true,
-            play: currentIndex == index ? true : false,
             positionVideo: position,
+            isPlay: true
           )
+        // ? Container()
         : PicturePlayerWidget(
             datas: datas,
             index: index,
-            play: currentIndex == index ? true : false,
             isFullScreen: true,
             positionAudio: position,
           );
@@ -364,16 +373,15 @@ class _FullscreenPageState extends State<FullscreenPage> {
                     radius: 12,
                     backgroundColor: Theme.of(context).colorScheme.onPrimary,
                     child: ClipOval(
-                      child: CachedNetworkImage(imageUrl: datas[selectedIndex.value].author?.avatar ?? '', 
-                        placeholder: (context, url) {
-                          return const LoadingWidget();
-                        },
-                        errorWidget: (context, url, error) {
-                          return Image.asset(
-                              'assets/icons/ic-account-user.png');
-                        },
-                      )
-                    ),
+                        child: CachedNetworkImage(
+                      imageUrl: datas[selectedIndex.value].author?.avatar ?? '',
+                      placeholder: (context, url) {
+                        return const LoadingWidget();
+                      },
+                      errorWidget: (context, url, error) {
+                        return Image.asset('assets/icons/ic-account-user.png');
+                      },
+                    )),
                   ),
           ),
         ),
@@ -526,4 +534,21 @@ class _FullscreenPageState extends State<FullscreenPage> {
       ],
     );
   }
+}
+
+class CustomPageViewScrollPhysics extends ScrollPhysics {
+  const CustomPageViewScrollPhysics({ScrollPhysics? parent})
+      : super(parent: parent);
+
+  @override
+  CustomPageViewScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return CustomPageViewScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  SpringDescription get spring => const SpringDescription(
+        mass: 80,
+        stiffness: 100,
+        damping: 1,
+      );
 }

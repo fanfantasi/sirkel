@@ -95,12 +95,6 @@ class _FocusDetectorState extends State<FocusDetector>
         onVisibilityChanged: (visibilityInfo) {
           final visibleFraction = visibilityInfo.visibleFraction * 100;
           var visiblePercentage = visibilityInfo.visibleFraction * 100;
-          // if (visiblePercentage > 75 && currentIndex == -1){
-          //   currentIndex = widget.index??-1;
-          // }else{
-          //   currentIndex = -1;
-          // }
-          // print('visiblePercentage $visiblePercentage ${widget.index} $visibleFraction');
           _notifyVisibilityStatusChange(visibleFraction, visiblePercentage);
         },
         child: widget.child,
@@ -114,41 +108,21 @@ class _FocusDetectorState extends State<FocusDetector>
     }
 
     final wasFullyVisible = _isWidgetVisible;
-    if (Utilitas.scrollDown) {
-      final isFullyVisible = newVisibleFraction > 75;
-      if (!_isWidgetVisible) {
-        if (!wasFullyVisible && isFullyVisible) {
-          _isWidgetVisible = true;
-          _notifyFocusGain();
-          _notifyVisibilityGain();
-        }
+    final isFullyVisible = newvisiblePercentage > 75;
+    if (!_isWidgetVisible) {
+      if (!wasFullyVisible && isFullyVisible) {
+        _isWidgetVisible = true;
+        _notifyFocusGain();
+        _notifyVisibilityGain();
       }
+    }
 
-      final isFullyInvisible = newVisibleFraction < 65;
-      if (_isWidgetVisible) {
-        if (wasFullyVisible && isFullyInvisible) {
-          _isWidgetVisible = false;
-          _notifyFocusLoss();
-          _notifyVisibilityLoss();
-        }
-      }
-    }else if (Utilitas.scrollUp){
-      final isFullyVisible = newVisibleFraction > 50;
-      if (!_isWidgetVisible) {
-        if (!wasFullyVisible && isFullyVisible) {
-          _isWidgetVisible = true;
-          _notifyFocusGain();
-          _notifyVisibilityGain();
-        }
-      }
-
-      final isFullyInvisible = newVisibleFraction < 50;
-      if (_isWidgetVisible) {
-        if (wasFullyVisible && isFullyInvisible) {
-          _isWidgetVisible = false;
-          _notifyFocusLoss();
-          _notifyVisibilityLoss();
-        }
+    final isFullyInvisible = newvisiblePercentage < 75;
+    if (_isWidgetVisible) {
+      if (wasFullyVisible && isFullyInvisible) {
+        _isWidgetVisible = false;
+        _notifyFocusLoss();
+        _notifyVisibilityLoss();
       }
     }
   }

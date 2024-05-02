@@ -16,3 +16,17 @@ class LoadingWidget extends StatelessWidget {
     );
   }
 }
+
+class LoadingInDropWidget extends StatelessWidget {
+  final Color? color;
+  const LoadingInDropWidget({Key? key, this.color}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: LoadingAnimationWidget.inkDrop(
+        color: color ?? Colors.white,
+        size: 32)
+    );
+  }
+}

@@ -14,11 +14,13 @@ import 'package:screenshare/core/utils/utils.dart';
 import 'package:screenshare/core/widgets/custom_lottie_screen.dart';
 import 'package:screenshare/core/widgets/custom_player.dart';
 import 'package:screenshare/core/widgets/custom_readmore.dart';
+import 'package:screenshare/core/widgets/focus_detector.dart';
 import 'package:screenshare/core/widgets/loadingwidget.dart';
 import 'package:screenshare/core/widgets/smooth_video_progress_better.dart';
 import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:screenshare/domain/entities/result_entity.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
+import 'package:screenshare/presentation/pages/home/widgets/thumnail.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'marquee_music.dart';
@@ -28,15 +30,15 @@ class BetterPlayerWidget extends StatefulWidget {
   final List<ResultContentEntity> datas;
   final int index;
   final bool isFullScreen;
-  final bool play;
+  final bool isPlay;
   final Duration? positionVideo;
   const BetterPlayerWidget(
       {super.key,
       required this.datas,
       required this.index,
       required this.isFullScreen,
-      this.positionVideo,
-      required this.play});
+      this.isPlay = false,
+      this.positionVideo});
 
   @override
   State<BetterPlayerWidget> createState() => _BetterPlayerWidgetState();
@@ -49,18 +51,21 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
   ResultContentEntity? data;
 
   Timer? timer;
+  int playIndex = -1;
 
   Offset positionDxDy = const Offset(0, 0);
   final ValueNotifier<bool> isPlaying = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isVisibility = ValueNotifier<bool>(true);
   final ValueNotifier<bool> isLiked = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isData = ValueNotifier<bool>(false);
+  final ValueNotifier<String> isBuffering = ValueNotifier<String>('');
 
   @override
   void initState() {
     data = widget.datas[widget.index];
     super.initState();
     isPlaying.value = false;
+    // print(_betterPlayerController.isVideoInitialized()??false);
     BetterPlayerConfiguration betterPlayerConfiguration =
         BetterPlayerConfiguration(
       fit: BoxFit.contain,
@@ -69,44 +74,13 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
       handleLifecycle: true,
       looping: true,
       autoDispose: true,
-      placeholder: Stack(
-        fit: StackFit.expand,
-        children: [
-          CachedNetworkImage(
-            key: Key(data!.id.toString()),
-            imageUrl:
-                '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}?tn=320',
-            fit: BoxFit.contain,
-            cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
-            placeholder: (context, url) {
-              return LoadingWidget(
-                leftcolor: Theme.of(context).primaryColor,
-              );
-            },
-            errorWidget: (context, url, error) {
-              return Image.asset(
-                'assets/image/no-image.jpg',
-                height: MediaQuery.of(context).size.width * .75,
-                fit: BoxFit.cover,
-              );
-            },
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: LoadingWidget(
-              rightcolor: Colors.pink,
-            ),
-          ),
-        ],
-      ),
+      // autoPlay: true,
       expandToFill: Configs().aspectRatio(
                   data!.pic!.first.width ?? 0, data!.pic!.first.height ?? 0) >
               1
           ? true
           : false,
+      showPlaceholderUntilPlay: true,
       controlsConfiguration: BetterPlayerControlsConfiguration(
         controlBarColor: Colors.transparent,
         controlsHideTime: const Duration(seconds: 1),
@@ -127,73 +101,41 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
     String path = '${Configs.baseUrlVid}${data!.pic!.first.file ?? ''}';
     if (mounted) {
       BetterPlayerDataSource dataSource = BetterPlayerDataSource(
-        BetterPlayerDataSourceType.network,
-        path,
-        placeholder: Stack(
-          fit: StackFit.expand,
-          children: [
-            CachedNetworkImage(
-              key: Key(data!.id.toString()),
-              imageUrl:
-                  '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}?tn=320',
-              fit: BoxFit.cover,
-              cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
-              placeholder: (context, url) {
-                return AspectRatio(
-                  aspectRatio: Configs().aspectRatio(data!.pic!.first.width??0, data!.pic!.first.height??0),
-                  child: Container(
-                    color: Colors.black12,
-                    child: Center(
-                      child: Shimmer.fromColors(
-                        baseColor: Colors.grey,
-                        highlightColor: Colors.black38,
-                        child: Image.asset(
-                          'assets/icons/sirkel.png',
-                          height: MediaQuery.of(context).size.width * .2,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-              errorWidget: (context, url, error) {
-                return Image.asset(
-                  'assets/image/no-image.jpg',
-                  height: MediaQuery.of(context).size.width * .75,
-                  fit: BoxFit.cover,
-                );
-              },
-            ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
-              child: LoadingWidget(
-                rightcolor: Colors.pink,
-              ),
-            ),
-          ],
-        ),
-      );
+          BetterPlayerDataSourceType.network, path,
+          placeholder: ThumbnailVideo(
+            data: data,
+            isPlay: widget.isPlay,
+          ),);
       await _betterPlayerController.setupDataSource(dataSource);
-      if (widget.play) {
-        _betterPlayerController.play();
+      _betterPlayerController.addEventsListener((event) {
+        // print(event.betterPlayerEventType);
+        if (event.betterPlayerEventType ==
+            BetterPlayerEventType.bufferingStart) {
+          isBuffering.value = 'buffering';
+        } else if (event.betterPlayerEventType ==
+                BetterPlayerEventType.bufferingEnd ||
+            event.betterPlayerEventType == BetterPlayerEventType.progress) {
+          isBuffering.value = '';
+        }
+      });
+      if (widget.isPlay) {
         isPlaying.value = false;
+        _betterPlayerController.play();
+
         if (widget.positionVideo != null) {
           _betterPlayerController
               .seekTo(widget.positionVideo! - const Duration(seconds: 1));
         }
 
-        isPlaying.value = true;
+        Future.microtask(() => isPlaying.value = true);
       }
     }
   }
 
   @override
   void didUpdateWidget(BetterPlayerWidget oldWidget) {
-    if (oldWidget.play != widget.play) {
-      if (widget.play) {
+    if (oldWidget.isPlay != widget.isPlay) {
+      if (widget.isPlay) {
         if (_betterPlayerController.isVideoInitialized()!) {
           _betterPlayerController.play();
           isPlaying.value = true;
@@ -210,11 +152,11 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
 
   @override
   void dispose() {
-    _betterPlayerController.dispose();
+    super.dispose();
+    // _betterPlayerController.dispose();
     isPlaying.value = false;
     debugPrint('didispose oke');
     Utilitas.jumpToTop = true;
-    super.dispose();
   }
 
   void likeAddTapScreen(ResultContentEntity selectedData) async {
@@ -298,98 +240,30 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
                   likeAddTapScreen(data!);
                 });
               },
-              child: ValueListenableBuilder<bool>(
-                  valueListenable: isPlaying,
-                  builder: (context, value, child) {
-                    if (!isPlaying.value) {
-                      return CachedNetworkImage(
-                        key: Key(data!.id.toString()),
-                        imageUrl:
-                            '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}?tn=320',
-                        fit: BoxFit.cover,
-                        cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
-                        placeholder: (context, url) {
-                          return AspectRatio(
-                            aspectRatio: Configs().aspectRatio(data!.pic!.first.width??0, data!.pic!.first.height??0),
-                            child: Container(
-                              color: Colors.black12,
-                              child: Center(
-                                child: Shimmer.fromColors(
-                                  baseColor: Colors.grey,
-                                  highlightColor: Colors.black38,
-                                  child: Image.asset(
-                                    'assets/icons/sirkel.png',
-                                    height: MediaQuery.of(context).size.width * .2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        errorWidget: (context, url, error) {
-                          return Image.asset(
-                            'assets/image/no-image.jpg',
-                            height: MediaQuery.of(context).size.width * .75,
-                            fit: BoxFit.cover,
-                          );
-                        },
+              child: Stack(alignment: Alignment.center, children: [
+                BetterPlayer(controller: _betterPlayerController),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  top: 0,
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: isBuffering,
+                    builder: (context, event, _) {
+                      return AnimatedOpacity(
+                        opacity: (event == 'buffering') ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: const SizedBox(
+                            height: 32,
+                            width: 32,
+                            child: LoadingInDropWidget(
+                              color: Colors.green,
+                            )),
                       );
-                    }
-                    return Stack(
-                      children: [
-                        BetterPlayer(controller: _betterPlayerController),
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: ValueListenableBuilder(
-                            valueListenable:
-                                _betterPlayerController.videoPlayerController!,
-                            builder: (context, value, child) {
-                              if (_betterPlayerController
-                                  .videoPlayerController!.value.initialized) {
-                                return SmoothVideoProgressBetter(
-                                  controller: _betterPlayerController,
-                                  builder:
-                                      (context, position, duration, child) =>
-                                          Theme(
-                                    data: ThemeData.from(
-                                      colorScheme: ColorScheme.fromSeed(
-                                          seedColor:
-                                              Theme.of(context).primaryColor),
-                                    ),
-                                    child: SliderTheme(
-                                      data: SliderThemeData(
-                                          trackHeight: 1,
-                                          trackShape: CustomTrackShape(),
-                                          thumbShape:
-                                              SliderComponentShape.noThumb),
-                                      child: Slider(
-                                        onChangeStart: (_) =>
-                                            _betterPlayerController.pause(),
-                                        onChangeEnd: (_) =>
-                                            _betterPlayerController.play(),
-                                        onChanged: (value) =>
-                                            _betterPlayerController.seekTo(
-                                                Duration(
-                                                    milliseconds:
-                                                        value.toInt())),
-                                        value:
-                                            position.inMilliseconds.toDouble(),
-                                        min: 0,
-                                        max: duration.inMilliseconds.toDouble(),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
+                    },
+                  ),
+                ),
+              ]),
             ),
             Positioned(
               left: 0,
@@ -641,89 +515,54 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
 
                 isVisibility.value = true;
               },
-              child: ValueListenableBuilder<bool>(
-                valueListenable: isPlaying,
-                builder: (context, value, child) {
-                  if (!isPlaying.value){
-                    return CachedNetworkImage(
-                        key: Key(data!.id.toString()),
-                        imageUrl:
-                            '${Configs.baseUrlVid}${data!.pic!.first.thumbnail ?? ''}?tn=320',
-                        fit: BoxFit.cover,
-                        cacheKey: '${data!.pic!.first.thumbnail ?? ''}?tn=320',
-                        placeholder: (context, url) {
-                          return AspectRatio(
-                            aspectRatio: Configs().aspectRatio(data!.pic!.first.width??0, data!.pic!.first.height??0),
-                            child: Container(
-                              color: Colors.black12,
-                              child: Center(
-                                child: Shimmer.fromColors(
-                                  baseColor: Colors.grey,
-                                  highlightColor: Colors.black38,
-                                  child: Image.asset(
-                                    'assets/icons/sirkel.png',
-                                    height: MediaQuery.of(context).size.width * .2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        errorWidget: (context, url, error) {
-                          return Image.asset(
-                            'assets/image/no-image.jpg',
-                            height: MediaQuery.of(context).size.width * .75,
-                            fit: BoxFit.cover,
-                          );
-                        },
-                      );
-                  }
-                  return Transform.scale(
-                    scale: getScale(),
-                    child: BetterPlayer(controller: _betterPlayerController),
-                  );
-                },
+              child: Transform.scale(
+                scale: getScale(),
+                child: BetterPlayer(controller: _betterPlayerController),
               ),
             ),
             Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: ValueListenableBuilder(
-                valueListenable: _betterPlayerController.videoPlayerController!,
-                builder: (context, value, child) {
-                  if (_betterPlayerController
-                      .videoPlayerController!.value.initialized) {
-                    return SmoothVideoProgressBetter(
-                      controller: _betterPlayerController,
-                      builder: (context, position, duration, child) => Theme(
-                        data: ThemeData.from(
-                          colorScheme: ColorScheme.fromSeed(
-                              seedColor: Theme.of(context).primaryColor),
-                        ),
-                        child: SliderTheme(
-                          data: SliderThemeData(
-                              trackHeight: 1,
-                              trackShape: CustomTrackShape(),
-                              thumbShape: SliderComponentShape.noThumb),
-                          child: Slider(
-                            onChangeStart: (_) =>
-                                _betterPlayerController.pause(),
-                            onChangeEnd: (_) => _betterPlayerController.play(),
-                            onChanged: (value) => _betterPlayerController
-                                .seekTo(Duration(milliseconds: value.toInt())),
-                            value: position.inMilliseconds.toDouble(),
-                            min: 0,
-                            max: duration.inMilliseconds.toDouble(),
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: ValueListenableBuilder(
+                    valueListenable: isPlaying,
+                    builder: (builder, value, child) {
+                      if (!value) {
+                        return LinearProgressIndicator(
+                          color: Colors.pink.shade900,
+                          backgroundColor: Colors.white.withOpacity(.3),
+                          borderRadius: BorderRadius.circular(8),
+                          minHeight: 3,
+                        );
+                      }
+                      return SmoothVideoProgressBetter(
+                        controller: _betterPlayerController,
+                        builder: (context, position, duration, child) => Theme(
+                          data: ThemeData.from(
+                            colorScheme: ColorScheme.fromSeed(
+                                seedColor: Theme.of(context).primaryColor),
+                          ),
+                          child: SliderTheme(
+                            data: SliderThemeData(
+                                trackHeight: 1.5,
+                                trackShape: CustomTrackShape(),
+                                thumbShape: SliderComponentShape.noThumb),
+                            child: Slider(
+                              onChangeStart: (_) =>
+                                  _betterPlayerController.pause(),
+                              onChangeEnd: (_) =>
+                                  _betterPlayerController.play(),
+                              onChanged: (value) =>
+                                  _betterPlayerController.seekTo(
+                                      Duration(milliseconds: value.toInt())),
+                              value: position.inMilliseconds.toDouble(),
+                              min: 0,
+                              max: duration.inMilliseconds.toDouble(),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
+                      );
+                    })),
           ],
         ),
       ),

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -67,4 +68,9 @@ extension IntegerExtension on int {
     final NumberFormat format = NumberFormat.compact();
     return format.format(this);
   }
+}
+extension ImageExtension on num {  
+  int cacheSize(BuildContext context) {  
+    return (this * MediaQuery.of(context).devicePixelRatio).round();  
+  }  
 }

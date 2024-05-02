@@ -7,13 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/core/utils/extentions.dart';
-import 'package:screenshare/core/utils/utils.dart';
-import 'package:screenshare/core/widgets/circle_image_animation.dart';
 import 'package:screenshare/core/widgets/custom_lottie_screen.dart';
 import 'package:screenshare/core/widgets/custom_readmore.dart';
 import 'package:screenshare/core/widgets/custom_track_shape.dart';
@@ -33,7 +30,6 @@ class VideoPlayerWidget extends StatefulWidget {
   final int index;
   final bool isFullScreen;
   final bool play;
-  final bool resumed;
   final Duration? positionVideo;
   const VideoPlayerWidget(
       {super.key,
@@ -41,8 +37,7 @@ class VideoPlayerWidget extends StatefulWidget {
       required this.index,
       required this.isFullScreen,
       required this.play,
-      this.positionVideo,
-      required this.resumed});
+      this.positionVideo});
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -82,17 +77,56 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     chewieController = ChewieController(
       videoPlayerController: videoPlayerController!,
       showControls: false,
-      placeholder: Center(
-        child: Shimmer.fromColors(
-          baseColor: Colors.grey,
-          highlightColor: Colors.black38,
-          child: Image.asset(
-            'assets/icons/sirkel.png',
-            // ignore: use_build_context_synchronously
-            height: MediaQuery.of(context).size.width * .5,
-          ),
-        ),
-      ),
+      autoInitialize: true,
+      zoomAndPan: true,
+      placeholder: Stack(
+                          children: [
+                            AspectRatio(
+                              aspectRatio: Configs().aspectRatio(
+                                  data!.pic!.first.width ?? 0,
+                                  data!.pic!.first.height ?? 0),
+                              child: CachedNetworkImage(
+                                key: Key(data!.id.toString()),
+                                imageUrl:
+                                    '${Configs.baseUrlVid}/${data!.pic!.first.thumbnail ?? ''}?tn=320',
+                                fit: BoxFit.cover,
+                                cacheKey:
+                                    '${data!.pic!.first.thumbnail ?? ''}?tn=320',
+                                width: double.infinity,
+                                placeholder: (context, url) {
+                                  return LoadingWidget(
+                                    leftcolor: Theme.of(context).primaryColor,
+                                  );
+                                },
+                                errorWidget: (context, url, error) {
+                                  return Image.asset(
+                                    'assets/image/no-image.jpg',
+                                    height:
+                                        MediaQuery.of(context).size.width * .75,
+                                    fit: BoxFit.cover,
+                                  );
+                                },
+                              ),
+                            ),
+                            Positioned(
+                                left: 0,
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: Shimmer.fromColors(
+                                    baseColor: Colors.grey,
+                                    highlightColor: Colors.black38,
+                                    child: Image.asset(
+                                      'assets/icons/sirkel.png',
+                                      height:
+                                          MediaQuery.of(context).size.width *
+                                              .2,
+                                    ),
+                                  ),
+                                )),
+                          ],
+                        ),
     );
     isPlaying.value = true;
     if (chewieController != null &&
@@ -172,6 +206,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
+  double getScaleImage(int width, int height) {
+    double videoRatio = Configs().aspectRatio(width, height);
+    if (videoRatio > 1) {
+      return 0.5 * videoRatio;
+    } else {
+      return videoRatio / .5;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return widget.isFullScreen ? fullscreenPage() : landingPage();
@@ -223,8 +266,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                       ? Stack(
                           children: [
                             AspectRatio(
-                              aspectRatio: chewieController!
-                                  .videoPlayerController.value.aspectRatio,
+                              aspectRatio: Configs().aspectRatio(
+                                  data!.pic!.first.width ?? 0,
+                                  data!.pic!.first.height ?? 0),
                               child: Container(
                                 color: Colors.black,
                                 child: Chewie(
@@ -561,27 +605,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                               aspectRatio: Configs().aspectRatio(
                                   data!.pic!.first.width ?? 0,
                                   data!.pic!.first.height ?? 0),
-                              child: CachedNetworkImage(
-                                key: Key(data!.id.toString()),
-                                imageUrl:
-                                    '${Configs.baseUrlVid}/${data!.pic!.first.thumbnail ?? ''}?tn=320',
-                                fit: BoxFit.cover,
-                                cacheKey:
-                                    '${data!.pic!.first.thumbnail ?? ''}?tn=320',
-                                width: double.infinity,
-                                placeholder: (context, url) {
-                                  return LoadingWidget(
-                                    leftcolor: Theme.of(context).primaryColor,
-                                  );
-                                },
-                                errorWidget: (context, url, error) {
-                                  return Image.asset(
-                                    'assets/image/no-image.jpg',
-                                    height:
-                                        MediaQuery.of(context).size.width * .75,
-                                    fit: BoxFit.cover,
-                                  );
-                                },
+                              child: Transform.scale(
+                                scale: getScaleImage(data!.pic!.first.width ?? 0,
+                                  data!.pic!.first.height ?? 0),
+                                child: CachedNetworkImage(
+                                  key: Key(data!.id.toString()),
+                                  imageUrl:
+                                      '${Configs.baseUrlVid}/${data!.pic!.first.thumbnail ?? ''}?tn=320',
+                                  fit: BoxFit.cover,
+                                  cacheKey:
+                                      '${data!.pic!.first.thumbnail ?? ''}?tn=320',
+                                  width: double.infinity,
+                                  placeholder: (context, url) {
+                                    return LoadingWidget(
+                                      leftcolor: Theme.of(context).primaryColor,
+                                    );
+                                  },
+                                  errorWidget: (context, url, error) {
+                                    return Image.asset(
+                                      'assets/image/no-image.jpg',
+                                      height:
+                                          MediaQuery.of(context).size.width * .75,
+                                      fit: BoxFit.cover,
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                             Positioned(
