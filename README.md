@@ -1,7 +1,7 @@
 # Sirkel
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/jhomlala/betterplayer/master/media/logo.png">
+<img src="https://raw.githubusercontent.com/fanfantasi/sirkel/Master/assets/svg/sirkel.svg?token=GHSAT0AAAAAACLZAAFYMI3TICPKPKBJPMDCZSDV6AQ">
 </p>
 
 ## Getting Started
