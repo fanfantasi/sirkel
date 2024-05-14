@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:photo_manager/photo_manager.dart';
 import 'package:screenshare/core/widgets/loadmore.dart';
@@ -16,6 +17,13 @@ class GalleryPage extends StatefulWidget {
 }
 
 class _GalleryPageState extends State<GalleryPage> {
+  final FilterOptionGroup _filterOptionGroup = FilterOptionGroup(
+    imageOption: const FilterOption(
+      sizeConstraint: SizeConstraint(ignoreSize: true),
+    ),
+  );
+
+
   final int _sizePerPage = 50;
   int maxselected = 1;
 
@@ -36,6 +44,7 @@ class _GalleryPageState extends State<GalleryPage> {
   @override
   void initState() {
     super.initState();
+    
     _selectedData.value = [];
     _requestAssets();
   }
@@ -54,11 +63,26 @@ class _GalleryPageState extends State<GalleryPage> {
   }
 
   Future<void> _requestAssets() async {
+    final permissionStatus = await Permission.storage.status;
+    if (permissionStatus.isDenied) {
+      var newPermissionStatus = await Permission.storage.request();
+
+      if (newPermissionStatus.isDenied) {
+        await openAppSettings();
+      } else {
+      // Granted
+      }
+    } else if (permissionStatus.isPermanentlyDenied) {
+      await openAppSettings();
+    } else {
+      // Already granted
+    }
     setState(() {
       isLoading = true;
     });
     // Request permissions.
     final ps = await PhotoManager.requestPermissionExtend();
+    
     if (!mounted) {
       return;
     }

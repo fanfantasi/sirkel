@@ -85,14 +85,15 @@ dependencies:
   # //Map Box
   mapbox_search: ^4.2.2
 
-  photo_manager: ^3.0.0
+  photo_manager: ^2.8.2
   chewie: ^1.5.0
-  # better_player: ^0.0.83
   ffmpeg_kit_flutter: ^6.0.3
   flutter_hooks: ^0.20.5
   custom_top_navigator: ^0.0.4
   # Editor Image
   text_editor: ^0.7.0
+  wechat_assets_picker: ^8.7.1
+  wechat_camera_picker: ^4.1.2
 
   lindi_sticker_widget:
     path: package/lindi_sticker_widget
@@ -100,8 +101,9 @@ dependencies:
   inview_notifier_list:
    git:
      url: https://github.com/SteepSheep/inview_notifier_list.git
-     
-  camerawesome:
+    
+  
+  camerawesome: 
     path: package/CamerAwesome
     
   detectable_text_field: 
@@ -109,6 +111,9 @@ dependencies:
 
   better_player:
     path: package/betterplayer
+
+  # flick_video_player:
+  #   path: package/flick-video-player
 
 dev_dependencies:
   flutter_test:

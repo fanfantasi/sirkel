@@ -12,6 +12,7 @@ class MarqueeMusic extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         CircleImageAnimation(
           child: SvgPicture.asset(
@@ -22,27 +23,29 @@ class MarqueeMusic extends StatelessWidget {
         const SizedBox(
           width: 5,
         ),
-        SizedBox(
-          width: MediaQuery.of(context).size.width * (isVideo ? isFullScreen ? 0.7 : .85 : .7),
-          height: 18,
-          child: Marquee(
-            text: '${title ?? ''} ',
-            fadingEdgeStartFraction: .2,
-            fadingEdgeEndFraction: .2,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              shadows: [
-                Shadow(
-                    offset: const Offset(.5, .5),
-                    blurRadius: 1.0,
-                    color: Colors.grey.withOpacity(.5)),
-                Shadow(
-                    offset: const Offset(.5, .5),
-                    blurRadius: 1.0,
-                    color: Colors.grey.withOpacity(.5)),
-              ],
+        Center(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * (isVideo ? isFullScreen ? 0.7 : .85 : .7),
+            height: 18,
+            child: Marquee(
+              text: '${title ?? ''} ',
+              fadingEdgeStartFraction: .2,
+              fadingEdgeEndFraction: .2,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                shadows: [
+                  Shadow(
+                      offset: const Offset(.5, .5),
+                      blurRadius: 1.0,
+                      color: Colors.grey.withOpacity(.5)),
+                  Shadow(
+                      offset: const Offset(.5, .5),
+                      blurRadius: 1.0,
+                      color: Colors.grey.withOpacity(.5)),
+                ],
+              ),
             ),
           ),
         ),

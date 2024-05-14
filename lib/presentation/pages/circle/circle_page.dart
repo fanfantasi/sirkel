@@ -2,7 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class CirclePage extends StatefulWidget {
-  const CirclePage({super.key});
+  final GlobalKey<NavigatorState>? navKey;
+  const CirclePage({super.key, this.navKey});
 
   @override
   State<CirclePage> createState() => _CirclePageState();

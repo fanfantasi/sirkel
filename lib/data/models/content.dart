@@ -78,6 +78,8 @@ class ResultFileModel extends ResultFileEntity {
       file: json['file']??'',
       height: json['height']??0,
       width: json['width']??0,
+      lastPosition: null,
+      wasPlaying: false,
       type: json['type']??'',
       thumbnail: json['thumbnail']??''
     );

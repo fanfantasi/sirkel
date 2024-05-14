@@ -27,6 +27,9 @@ class RepositoryImpl implements Repository {
   Future<MusicModel> getMusic({String? params}) async => await dataSource.getMusic(params: params);
 
   @override
+  Future<StickerModel> getSticker() async => await dataSource.getSticker();
+
+  @override
   Future<ResultModel> liked({String? id, String? postId}) async => await dataSource.liked(id: id, postId: postId);
 
   @override

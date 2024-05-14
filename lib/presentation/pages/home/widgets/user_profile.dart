@@ -1,10 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:screenshare/core/utils/headers.dart';
 import 'package:screenshare/core/utils/utils.dart';
 import 'package:screenshare/domain/entities/content_entity.dart';
-import 'package:transparent_image/transparent_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class UserProfileWidget extends StatelessWidget {

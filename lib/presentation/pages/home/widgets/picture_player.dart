@@ -20,6 +20,7 @@ import 'package:screenshare/domain/entities/result_entity.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import 'marquee_music.dart';
 import 'sound_music.dart';
@@ -28,7 +29,7 @@ import 'user_profile.dart';
 class PicturePlayerWidget extends StatefulWidget {
   final List<ResultContentEntity> datas;
   final int index;
-  // final bool play;
+  final bool play;
   final bool isFullScreen;
   final String? thumbnail;
   final Duration? positionAudio;
@@ -36,7 +37,7 @@ class PicturePlayerWidget extends StatefulWidget {
       {super.key,
       required this.datas,
       required this.index,
-      // required this.play,
+      required this.play,
       required this.isFullScreen,
       this.positionAudio,
       this.thumbnail});
@@ -61,21 +62,15 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
   int playIndex = -1;
   bool portrait = true;
   final debouncer = Debouncer(milliseconds: 1000);
-
+  bool? _wasPlayingBeforePause;
   @override
   void initState() {
     data = widget.datas[widget.index];
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((v) async {
-      // print('data ${data?.author?.name??''}');
       if (data!.music != null) {
         playMusic();
       }
-      // else{
-      //   if (player.playing){
-      //     player.stop();
-      //   }
-      // }
       isData.value = data?.liked ?? false;
     });
 
@@ -94,36 +89,37 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
           case ProcessingState.loading:
           case ProcessingState.buffering:
           case ProcessingState.ready:
-            // if (!player.pl)
             player.setVolume(Utilitas.isMute ? 0 : 1);
             break;
           case ProcessingState.completed:
         }
       }
     });
-    // await player.play();
     await player.setLoopMode(LoopMode.one);
     await player.seek(widget.positionAudio ?? Duration.zero);
+    if (widget.play) {
+      initializationPlayer();
+    }
   }
 
   Future initializationPlayer() async {
     player.play();
   }
 
-  // @override
-  // void didUpdateWidget(PicturePlayerWidget oldWidget) {
-  //   if (oldWidget.play != widget.play) {
-  //     if (data!.music != null) {
-  //       if (widget.play) {
-  //         player.seek(widget.positionAudio ?? Duration.zero);
-  //         player.play();
-  //       } else {
-  //         player.pause();
-  //       }
-  //     }
-  //   }
-  //   super.didUpdateWidget(oldWidget);
-  // }
+  @override
+  void didUpdateWidget(PicturePlayerWidget oldWidget) {
+    if (oldWidget.play != widget.play) {
+      if (data!.music != null) {
+        if (widget.play) {
+          player.seek(widget.positionAudio ?? Duration.zero);
+          player.play();
+        } else {
+          player.pause();
+        }
+      }
+    }
+    super.didUpdateWidget(oldWidget);
+  }
 
   Future<void> stop() async {
     if (data!.music != null) {
@@ -138,11 +134,11 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
     double videoRatio = Configs()
         .aspectRatio(data!.pic!.first.width!, data!.pic!.first.height!);
     if (videoRatio > 1) {
-        portrait = false;
-      return videoRatio * 1.2;
+      portrait = false;
+      return videoRatio;
     } else {
       portrait = true;
-      return videoRatio / .9;
+      return videoRatio;
     }
   }
 
@@ -210,32 +206,23 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
   }
 
   Widget landingPage() {
-    return FocusDetector(
-      // index: widget.index,
-      onFocusLost: () {
-        player.stop();
-        if (playIndex == -1) {
-          playIndex = widget.index;
+    return VisibilityDetector(
+      key: ObjectKey(widget.datas[widget.index]),
+      onVisibilityChanged: (visibility) {
+        if (visibility.visibleFraction == 0){
+            if (_wasPlayingBeforePause ?? false){
+              player.play();
+              _wasPlayingBeforePause ??= player.playing;
+            }else{
+              player.pause();
+              _wasPlayingBeforePause ??= player.playing;
+            }
+            
+        }else{
+          if (_wasPlayingBeforePause == false && !player.playing && widget.play) {
+            player.play();
+          }
         }
-      },
-      onFocusGained: () {
-        if (playIndex == widget.index) {
-        } else {
-          playIndex = widget.index;
-        }
-        if (playIndex == widget.index) {
-          player.play();
-        } else {
-          player.stop();
-        }
-      },
-      onVisibilityLost: () {},
-      onVisibilityGained: () {},
-      onForegroundLost: () {
-        player.dispose();
-      },
-      onForegroundGained: () {
-        player.play();
       },
       // isWidgetTest: false,
       child: Column(
@@ -475,8 +462,8 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                 }
               },
               onLongPress: () {
-                timer = Timer.periodic(const Duration(milliseconds: 100),
-                    (timer) {
+                timer =
+                    Timer.periodic(const Duration(milliseconds: 100), (timer) {
                   player.pause();
                 });
               },
@@ -495,8 +482,8 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                     child: CachedNetworkImage(
                       imageUrl:
                           '${Configs.baseUrlPic}/${data!.pic?[i].file}?tn=640',
-                      memCacheHeight: portrait ? 640.cacheSize(context) : 480.cacheSize(context),
-                      memCacheWidth: portrait ? 480.cacheSize(context) : 640.cacheSize(context),
+                      // memCacheHeight: portrait ? 640.cacheSize(context) : 480.cacheSize(context),
+                      // memCacheWidth: portrait ? 480.cacheSize(context) : 640.cacheSize(context),
                       fit: portrait ? BoxFit.cover : BoxFit.contain,
                       placeholder: (context, url) {
                         return Container(
@@ -591,10 +578,10 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
     return Stack(
       children: [
         AspectRatio(
-          aspectRatio: Configs()
-        .aspectRatio(data.pic!.first.width!, data.pic!.first.height!),
+          aspectRatio:data.pic!.isEmpty ? 1 : Configs()
+              .aspectRatio(data.pic!.first.width??0, data.pic!.first.height??0),
           child: PageView.builder(
-            itemCount: data.pic!.length,
+            itemCount: data.pic?.length??0,
             physics: const BouncingScrollPhysics(),
             scrollDirection: Axis.horizontal,
             controller: _controllerPic,
@@ -605,14 +592,15 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
-                        // player.pause();
+                        player.pause();
                         await Navigator.pushNamed(
                             context, Routes.fullscreenPage, arguments: [
                           widget.index,
                           widget.datas,
                           player.position
                         ]);
-                        // player.play();
+                        player.seek(player.position);
+                        player.play();
                       },
                       onDoubleTapDown: (details) {
                         var position = details.localPosition;
@@ -681,17 +669,17 @@ class _PicturePlayerWidgetState extends State<PicturePlayerWidget>
             ),
           ),
         if (data.music != null)
-          Positioned(right: 12, bottom: 10, child: SoundMusic(player: player)),
+          Positioned(right: 12, bottom: 24, child: SoundMusic(player: player)),
         if (data.music != null && (data.mentions?.isEmpty ?? false))
           Positioned(
               left: 18,
               right: MediaQuery.of(context).size.width -
                   MediaQuery.of(context).size.width * .9,
-              bottom: 12,
+              bottom: 24,
               child: MarqueeMusic(title: data.music?.name ?? '')),
         if (data.mentions?.isNotEmpty ?? false)
           Positioned(
-            bottom: 15,
+            bottom: 24,
             left: 10,
             child: Container(
                 padding: const EdgeInsets.all(4),

@@ -24,6 +24,9 @@ class DataSourceImpl implements DataSource {
   Future<MusicModel> getMusic({String? params}) async => await api.getMusic(params: params);
 
   @override
+  Future<StickerModel> getSticker() async => await api.getSticker();
+
+  @override
   Future<ContentModel> getContent({int? page}) async => await api.getContent(page: page);
 
   @override

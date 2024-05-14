@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -35,6 +33,15 @@ extension StringDefine on String {
   bool hasScroll() {
     return contains('stopped');
   }
+  
+  bool withHttp() {
+    if (length > 5) {
+      return substring(0, 4) == 'http';
+    } else {
+      return false;
+    }
+  }
+
 }
 
 extension StringExtension on String {

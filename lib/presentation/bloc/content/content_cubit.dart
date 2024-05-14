@@ -1,9 +1,7 @@
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/data/models/index.dart';
 import 'package:screenshare/domain/usecases/content/get_content_usecase.dart';
 import 'package:screenshare/domain/usecases/content/get_find_content_usecase.dart';

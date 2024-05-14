@@ -1,22 +1,25 @@
 // import 'dart:async';
-// import 'package:easy_localization/easy_localization.dart';
 // import 'package:flutter/material.dart';
 // import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:lottie/lottie.dart';
-// import 'package:screenshare/core/utils/audio_service.dart';
+// import 'package:inview_notifier_list/inview_notifier_list.dart';
 // import 'package:screenshare/core/utils/config.dart';
+// import 'package:screenshare/core/utils/debouncer.dart';
+// import 'package:screenshare/core/utils/extentions.dart';
 // import 'package:screenshare/core/utils/headers.dart';
+// import 'package:screenshare/core/utils/utils.dart';
 // import 'package:screenshare/core/widgets/custom_divider.dart';
-// import 'package:screenshare/core/widgets/loadmore.dart';
+// import 'package:screenshare/core/widgets/loadingwidget.dart';
 // import 'package:screenshare/domain/entities/content_entity.dart';
 // import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 // import 'package:screenshare/presentation/bloc/content/post/post_content_cubit.dart';
-// import 'package:screenshare/presentation/bloc/navigation/navigation_cubit.dart';
-// import 'package:screenshare/presentation/pages/error/error_page.dart';
-// import 'package:screenshare/presentation/pages/home/widgers/story_page.dart';
+// import 'package:screenshare/presentation/pages/home/widgets/story_page.dart';
+// import 'package:screenshare/presentation/pages/home/widgets/video_player_better.dart';
+// import 'package:video_player/video_player.dart';
 
-// import 'widgers/content_item.dart';
-// import 'widgers/content_loader.dart';
+// import 'controller/flick_multi_manager.dart';
+// import 'widgets/content_loader.dart';
+// import 'widgets/picture_player.dart';
+// import 'widgets/video_player.dart';
 
 // class HomePage extends StatefulWidget {
 //   const HomePage({super.key});
@@ -25,35 +28,48 @@
 //   State<HomePage> createState() => _HomePageState();
 // }
 
-// class _HomePageState extends State<HomePage> {
+// class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 //   GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
+//   final ValueNotifier<int> isPlaying = ValueNotifier<int>(-1);
 //   late StreamSubscription<ContentState> picStream;
 //   late StreamSubscription<PostContentState> postContentStream;
-//   late StreamSubscription<NavigationState> buttomBar;
+
+//   late FlickMultiManager flickMultiManager;
+
 
 //   List<ResultContentEntity> result = [];
-//   int page = 1;
-//   bool isRefreshPage = false;
-//   bool isInitialPage = true;
-//   bool isLastPage = false;
-//   bool isLoadMore = false;
 //   final ValueNotifier<String> avatar = ValueNotifier<String>('');
 
 //   bool progressPostContent = false;
-
+//   Offset positionDxDy = const Offset(0, 0);
+//   final debouncer = Debouncer(milliseconds: 1000);
 //   @override
 //   void initState() {
-//     isInitialPage = true;
+//     if (result.isEmpty) {
+//       Utilitas.page = 1;
+//       Utilitas.isRefreshPage = false;
+//       Utilitas.isInitialPage = true;
+//       Utilitas.isLastPage = false;
+//       Utilitas.isLoadMore = false;
+//     }
+//     flickMultiManager = FlickMultiManager();
+
 //     WidgetsBinding.instance.addPostFrameCallback((v) async {
-//       getPic();
+//       if (result.isEmpty) {
+//         getPic();
+//       }
+
 //       avatar.value = await Utils.avatar();
 //       if (!mounted) return;
-//       postContentStream = context.read<PostContentCubit>().stream.listen((event) {
+//       postContentStream =
+//           context.read<PostContentCubit>().stream.listen((event) {
 //         if (event is PostContentLoaded) {
-//           isRefreshPage = true;
-//           MyAudioService.instance.stop();
-//           context.read<ContentCubit>().getFindContent(id: event.result.returned);
-          
+//           _scrollTop(10);
+//           // Configs.scrollControllerHome =  PageController(initialPage: 0);
+//           Utilitas.isRefreshPage = true;
+//           context
+//               .read<ContentCubit>()
+//               .getFindContent(id: event.result.returned);
 //         }
 //       });
 //     });
@@ -63,26 +79,28 @@
 //   Future<void> getPic() async {
 //     result.clear();
 
-//     context.read<ContentCubit>().getContent(page: page);
+//     context.read<ContentCubit>().getContent(page: Utilitas.page);
 //     if (!mounted) return;
 
 //     picStream = context.read<ContentCubit>().stream.listen((event) {
-//       print('disii event $event');
 //       if (event is ContentLoaded) {
-//         if (isRefreshPage) {
-//           for (var e in event.content.data ?? []) {
+//         for (var e in event.content.data ?? []) {
+//           if (result.isNotEmpty) {
 //             if (result.where((f) => f.id == e.id).isEmpty) {
-//               result.insert(0, e);
+//               if (Utilitas.isRefreshPage) {
+//                 result.insert(0, e);
+//               } else {
+//                 result.add(e);
+//               }
 //             }
+//           } else {
+//             result.add(e);
 //           }
-//         } else {
-//           result.addAll(event.content.data ?? []);
 //         }
+
 //         if (event.content.data?.isEmpty ?? false) {
-//           // setState(() {
-//           //   isLastPage = true;
-//           // });
-//           isLastPage = true;
+//           Utilitas.isLastPage = true;
+//           Utilitas.isLoadMore = false;
 //         }
 //       }
 //     });
@@ -94,7 +112,13 @@
 //     postContentStream.cancel();
 //     super.dispose();
 //   }
-  
+
+//   void _scrollTop(int? milliseconds) async {
+//     await Configs.scrollControllerHome.animateTo(0,
+//         duration: Duration(milliseconds: milliseconds ?? 300),
+//         curve: Curves.easeIn);
+//     Configs.scrollControllerHome.jumpTo(0.0);
+//   }
 
 //   @override
 //   Widget build(BuildContext context) {
@@ -110,160 +134,133 @@
 //       body: RefreshIndicator(
 //         onRefresh: () async {
 //           setState(() {
-//             page = 1;
-//             isRefreshPage = true;
-//             isInitialPage = true;
-//             isLastPage = false;
-//             isLoadMore = false;
+//             Utilitas.page = 1;
+//             Utilitas.isRefreshPage = true;
+//             Utilitas.isInitialPage = true;
+//             Utilitas.isLastPage = false;
+//             Utilitas.isLoadMore = false;
 //           });
-//           context.read<ContentCubit>().getContent();
+//           context.read<ContentCubit>().getContent(page: Utilitas.page);
 //         },
-//         child: BlocBuilder<ContentCubit, ContentState>(
-//           builder: (context, state) {
-//             return RefreshLoadmore(
-//               scrollController: Configs.scrollControllerHome,
-//               isLastPage: isLastPage,
-//               onLoadmore: () async {
-//                 if (isLoadMore) {
-//                   return;
-//                 }
-
-//                 setState(() {
-//                   isRefreshPage = false;
-//                   isLoadMore = true;
-//                   isInitialPage = false;
-//                   page += 1;
-//                 });
-//                 context.read<ContentCubit>().getContent(page: page);
-//                 Future.delayed(const Duration(seconds: 1), () async {
-//                   setState(() {
-//                     isLoadMore = false;
-//                   });
-//                 });
+//         child:
+//             BlocBuilder<ContentCubit, ContentState>(builder: (context, state) {
+//           // print(state.props.length);
+//           return InViewNotifierCustomScrollView(
+//               controller: Configs.scrollControllerHome,
+//               physics:
+//                   const BouncingScrollPhysics(parent: ClampingScrollPhysics()),
+//               initialInViewIds: const ['0'],
+//               isInViewPortCondition: (double deltaTop, double deltaBottom,
+//                   double viewPortDimension) {
+//                 return deltaTop < (0.5 * viewPortDimension) &&
+//                     deltaBottom > (0.5 * viewPortDimension);
 //               },
-//               noMoreWidget: (result.isEmpty && isInitialPage)
-//                   ? SizedBox(
-//                       height: MediaQuery.of(context).size.height * .5,
-//                       child: Center(
-//                         child: Column(
-//                           mainAxisAlignment: MainAxisAlignment.center,
-//                           crossAxisAlignment: CrossAxisAlignment.center,
-//                           children: [
-//                             Lottie.asset('assets/lottie/lost-connection.json',
-//                                 alignment: Alignment.center,
-//                                 fit: BoxFit.cover,
-//                                 height: 120),
-//                             const Text('No Data'),
-//                           ],
-//                         ),
-//                       ),
-//                     )
-//                   : Column(
-//                       mainAxisAlignment: MainAxisAlignment.center,
-//                       crossAxisAlignment: CrossAxisAlignment.center,
-//                       children: [
-//                         Center(
-//                           child: Text(
-//                             'no more data'.tr(),
-//                             style: TextStyle(
-//                               fontSize: 14,
-//                               color: Theme.of(context).disabledColor,
-//                             ),
-//                           ),
-//                         ),
-//                         const SizedBox(
-//                           height: 12.0,
-//                         ),
-//                         RichText(
-//                           text: TextSpan(children: [
-//                             TextSpan(
-//                                 text: 'Powered By ',
-//                                 style: TextStyle(
-//                                   fontSize: 12,
+//               slivers: [
+//                 SliverPadding(
+//                   padding: const EdgeInsets.symmetric(vertical: 0.0),
+//                   sliver: SliverList(
+//                     delegate: SliverChildListDelegate([
+//                       StoryPage(avatar: avatar),
+//                       const CustomDivider(),
+//                       BlocBuilder<PostContentCubit, PostContentState>(
+//                           builder: (context, state) {
+//                         if (state is PostContentLoading) {
+//                           return Padding(
+//                             padding: const EdgeInsets.all(4.0),
+//                             child: Column(
+//                               crossAxisAlignment: CrossAxisAlignment.start,
+//                               children: [
+//                                 Text(
+//                                   'Proses upload sedang berlangsung ...',
+//                                   style: TextStyle(
+//                                       color: Theme.of(context)
+//                                           .colorScheme
+//                                           .primary
+//                                           .withOpacity(.6)),
+//                                 ),
+//                                 const SizedBox(
+//                                   height: 5,
+//                                 ),
+//                                 LinearProgressIndicator(
+//                                   minHeight: 3,
 //                                   color: Theme.of(context)
-//                                       .disabledColor
-//                                       .withOpacity(.5),
-//                                 )),
-//                             TextSpan(
-//                               text: 'Sirkle',
-//                               style: TextStyle(
-//                                 fontSize: 14,
-//                                 color: Theme.of(context)
-//                                     .colorScheme
-//                                     .primary
-//                                     .withOpacity(.5),
-//                               ),
-//                             )
-//                           ]),
-//                         ),
-//                       ],
-//                     ),
-//               child: Column(
-//                 children: [
-//                   StoryPage(avatar: avatar),
-//                   const SizedBox(
-//                     height: 8.0,
+//                                       .primaryColor
+//                                       .withOpacity(.7),
+//                                   backgroundColor: Theme.of(context)
+//                                       .colorScheme
+//                                       .primary
+//                                       .withOpacity(.2),
+//                                 ),
+//                               ],
+//                             ),
+//                           );
+//                         }
+//                         return SizedBox.fromSize();
+//                       }),
+//                     ]),
 //                   ),
-//                   const CustomDivider(),
-//                   BlocBuilder<PostContentCubit, PostContentState>(
-//                     builder: (context, state){
-//                       print('disini state portcontent $state');
-//                       if (state is PostContentLoading){
-//                         return Padding(
-//                           padding: const EdgeInsets.all(4.0),
-//                           child: Column(
-//                             crossAxisAlignment: CrossAxisAlignment.start,
-//                             children: [
-//                               Text(
-//                                 'Proses upload sedang berlangsung ...',
-//                                 style: TextStyle(
-//                                     color: Theme.of(context)
-//                                         .colorScheme
-//                                         .primary
-//                                         .withOpacity(.6)),
+//                 ),
+//                 if (state is ContentLoading &&
+//                     Utilitas.isInitialPage &&
+//                     !Utilitas.isRefreshPage)
+//                   SliverPadding(
+//                     padding: const EdgeInsets.symmetric(vertical: 4),
+//                     sliver: SliverList(
+//                       delegate: SliverChildBuilderDelegate(
+//                           (BuildContext context, int index) {
+//                         return const ContentLoader();
+//                       }, childCount: 6),
+//                     ),
+//                   ),
+//                 SliverPadding(
+//                   padding: const EdgeInsets.symmetric(vertical: 4),
+//                   sliver: SliverList(
+//                     delegate: SliverChildBuilderDelegate(
+//                       (context, index) {
+//                         if (result.length == index) {
+//                           return Padding(
+//                             padding: const EdgeInsets.only(top: 16, bottom: 16),
+//                             child: Center(
+//                               child: LoadingWidget(
+//                                 leftcolor: Theme.of(context).primaryColor,
+//                                 rightcolor:
+//                                     Theme.of(context).colorScheme.primary,
 //                               ),
-//                               const SizedBox(
-//                                 height: 5,
-//                               ),
-//                               LinearProgressIndicator(
-//                                 minHeight: 3,
-//                                 color: Theme.of(context).primaryColor.withOpacity(.7),
-//                                 backgroundColor: Theme.of(context)
-//                                     .colorScheme
-//                                     .primary
-//                                     .withOpacity(.2),
-//                               ),
-//                             ],
-//                           ),
+//                             ),
+//                           );
+//                         }
+//                         return InViewNotifierWidget(
+//                           id: '$index',
+//                           builder: (BuildContext context, bool isInView,
+//                             Widget? child) {
+//                               if (thisVideo(result[index].pic!.first.file ?? '')) {
+//                                 return VideoPlayerWidget(
+//                                   key: Key(result[index].id.toString()),
+//                                   datas: result,
+//                                   index: index,
+//                                   isPlay: isInView,
+//                                   isFullScreen: false,
+//                                   flickMultiManager: flickMultiManager,
+//                                 );
+//                               } else {
+//                                 return PicturePlayerWidget(
+//                                   key: Key(result[index].id.toString()),
+//                                   datas: result,
+//                                   index: index,
+//                                   isFullScreen: false,
+//                                 );
+//                               }
+//                             }
 //                         );
-//                       }
-//                       return SizedBox.fromSize();
-//                     }
-//                   ),
-//                   const SizedBox(
-//                     height: 8.0,
-//                   ),
-//                   if (state is ContentLoading &&
-//                       isInitialPage &&
-//                       !isRefreshPage)
-//                     Wrap(
-//                       alignment: WrapAlignment.start,
-//                       children: loadingIndicator(),
-//                     ),
-//                   if (state is ContentFailure)
-//                     ErrorPage(
-//                       onTap: (){
-//                         context.read<ContentCubit>().getContent(page: page);
 //                       },
+//                       childCount: Utilitas.isLoadMore
+//                           ? result.length + 1
+//                           : result.length,
 //                     ),
-//                   ContentItemWidget(
-//                     data: result,
 //                   ),
-//                 ],
-//               ),
-//             );
-//           },
-//         ),
+//                 ),
+//               ]);
+//         }),
 //       ),
 //     );
 //   }

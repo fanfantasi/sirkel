@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:inview_notifier_list/inview_notifier_list.dart';
@@ -15,24 +14,28 @@ import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/content/post/post_content_cubit.dart';
 import 'package:screenshare/presentation/pages/home/widgets/story_page.dart';
 import 'package:screenshare/presentation/pages/home/widgets/video_player_better.dart';
-
+// import 'controller/flick_multi_manager.dart';
 import 'widgets/content_loader.dart';
 import 'widgets/picture_player.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final GlobalKey<NavigatorState>? navKey;
+
+  const HomePage({super.key, this.navKey});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+class _HomePageState extends State<HomePage> {
   GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
   final ValueNotifier<int> isPlaying = ValueNotifier<int>(-1);
   late StreamSubscription<ContentState> picStream;
   late StreamSubscription<PostContentState> postContentStream;
 
-  List<ResultContentEntity> result = [];
+  // late FlickMultiManager flickMultiManager;
+
+  late List<ResultContentEntity> result = <ResultContentEntity>[];
   final ValueNotifier<String> avatar = ValueNotifier<String>('');
 
   bool progressPostContent = false;
@@ -47,6 +50,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       Utilitas.isLastPage = false;
       Utilitas.isLoadMore = false;
     }
+    // flickMultiManager = FlickMultiManager();
 
     WidgetsBinding.instance.addPostFrameCallback((v) async {
       if (result.isEmpty) {
@@ -136,124 +140,135 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           });
           context.read<ContentCubit>().getContent(page: Utilitas.page);
         },
-        child:
-            BlocBuilder<ContentCubit, ContentState>(builder: (context, state) {
-          // print(state.props.length);
-          return InViewNotifierCustomScrollView(
-              controller: Configs.scrollControllerHome,
-              physics:
-                  const BouncingScrollPhysics(parent: ClampingScrollPhysics()),
-              initialInViewIds: const ['0'],
-              isInViewPortCondition: (double deltaTop, double deltaBottom,
-                  double viewPortDimension) {
-                return deltaTop < (0.5 * viewPortDimension) &&
-                    deltaBottom > (0.5 * viewPortDimension);
-              },
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(vertical: 0.0),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      StoryPage(avatar: avatar),
-                      const CustomDivider(),
-                      BlocBuilder<PostContentCubit, PostContentState>(
-                          builder: (context, state) {
-                        if (state is PostContentLoading) {
-                          return Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Proses upload sedang berlangsung ...',
-                                  style: TextStyle(
+        child: BlocBuilder<ContentCubit, ContentState>(builder: (context, state) {
+          return Stack(
+            children: [
+              InViewNotifierCustomScrollView(
+                  controller: Configs.scrollControllerHome,
+                  physics:
+                      const BouncingScrollPhysics(parent: ClampingScrollPhysics()),
+                  initialInViewIds: const ['0'],
+                  isInViewPortCondition: (double deltaTop, double deltaBottom,
+                      double viewPortDimension) {
+                    return deltaTop < (0.5 * viewPortDimension) &&
+                        deltaBottom > (0.5 * viewPortDimension);
+                  },
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(vertical: 0.0),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          StoryPage(avatar: avatar),
+                          const CustomDivider(),
+                          BlocBuilder<PostContentCubit, PostContentState>(
+                              builder: (context, state) {
+                            if (state is PostContentLoading) {
+                              return Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Proses upload sedang berlangsung ...',
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withOpacity(.6)),
+                                    ),
+                                    const SizedBox(
+                                      height: 5,
+                                    ),
+                                    LinearProgressIndicator(
+                                      minHeight: 3,
                                       color: Theme.of(context)
+                                          .primaryColor
+                                          .withOpacity(.7),
+                                      backgroundColor: Theme.of(context)
                                           .colorScheme
                                           .primary
-                                          .withOpacity(.6)),
+                                          .withOpacity(.2),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(
-                                  height: 5,
-                                ),
-                                LinearProgressIndicator(
-                                  minHeight: 3,
-                                  color: Theme.of(context)
-                                      .primaryColor
-                                      .withOpacity(.7),
-                                  backgroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withOpacity(.2),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return SizedBox.fromSize();
-                      }),
-                    ]),
-                  ),
-                ),
-                if (state is ContentLoading &&
-                    Utilitas.isInitialPage &&
-                    !Utilitas.isRefreshPage)
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                          (BuildContext context, int index) {
-                        return const ContentLoader();
-                      }, childCount: 6),
-                    ),
-                  ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (result.length == index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 16, bottom: 16),
-                            child: Center(
-                              child: LoadingWidget(
-                                leftcolor: Theme.of(context).primaryColor,
-                                rightcolor:
-                                    Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          );
-                        }
-                        return InViewNotifierWidget(
-                          id: '$index',
-                          builder: (BuildContext context, bool isInView,
-                            Widget? child) {
-                              if (thisVideo(result[index].pic!.first.file ?? '')) {
-                                // print('data player $isInView $index');
-                                return BetterPlayerWidget(
-                                  key: Key(result[index].id.toString()),
-                                  datas: result,
-                                  index: index,
-                                  isPlay: isInView,
-                                  isFullScreen: false,
-                                );
-                              } else {
-                                return PicturePlayerWidget(
-                                  key: Key(result[index].id.toString()),
-                                  datas: result,
-                                  index: index,
-                                  isFullScreen: false,
-                                );
-                              }
+                              );
                             }
-                        );
-                      },
-                      childCount: Utilitas.isLoadMore
-                          ? result.length + 1
-                          : result.length,
+                            return SizedBox.fromSize();
+                          }),
+                        ]),
+                      ),
                     ),
-                  ),
+                    if (state is ContentLoading &&
+                        Utilitas.isInitialPage &&
+                        !Utilitas.isRefreshPage)
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                              (BuildContext context, int index) {
+                            return const ContentLoader();
+                          }, childCount: 6),
+                        ),
+                      ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            if (result.length == index) {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 16, bottom: 16),
+                                child: Center(
+                                  child: LoadingWidget(
+                                    leftcolor: Theme.of(context).primaryColor,
+                                    rightcolor:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              );
+                            }
+                            
+                            return InViewNotifierWidget(
+                              id: '$index',
+                              builder: (BuildContext context, bool isInView,
+                                Widget? child) {
+                                if (thisVideo(result[index].pic!.first.file ?? '')) {
+                                  return BetterPlayerWidget(
+                                    key: Key(result[index].id.toString()),
+                                    datas: result,
+                                    index: index,
+                                    isPlay: isInView,
+                                    isFullScreen: false,
+                                    // flickMultiManager: flickMultiManager,
+                                  );
+                                } else {
+                                  return PicturePlayerWidget(
+                                    key: Key(result[index].id.toString()),
+                                    datas: result,
+                                    index: index,
+                                    play: isInView,
+                                    isFullScreen: false,
+                                  );
+                                }
+                                }
+                            );
+                          },
+                          childCount: Utilitas.isLoadMore
+                              ? result.length + 1
+                              : result.length,
+                        ),
+                      ),
+                    ),
+                  ],),
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  height: 1.0,
+                  color: Colors.redAccent,
                 ),
-              ]);
+              )
+            ],
+          );
         }),
       ),
     );

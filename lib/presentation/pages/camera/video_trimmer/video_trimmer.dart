@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/domain/entities/music_entity.dart';
 import 'package:screenshare/domain/entities/post_content_entity.dart';
 import 'package:video_trimmer/video_trimmer.dart';
@@ -32,34 +33,44 @@ class _VideoTrimmerPageState extends State<VideoTrimmerPage>
   Future<String?> _trimVideo() async {
     String? valuePath;
 
-    await _trimmer.saveTrimmedVideo(
+    _trimmer.saveTrimmedVideo(
         startValue: _startValue,
         endValue: _endValue,
-        onSave: (value) {
-          valuePath = value;
+        onSave: (outputPath) {
+          valuePath = outputPath;
+          Navigator.pushReplacementNamed(
+          context,
+          Routes.previewPicturePage,
+          arguments: PostContentEntity(
+              files: [outputPath??''],
+              music: musicSelected,
+              durationVideo: const Duration(seconds: 10),
+              type: takeCamera?.type??''));
         });
-
+    
     return valuePath;
   }
 
   @override
   void initState() {
     super.initState();
+    
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      var map = ModalRoute.of(context)!.settings.arguments as PostContentEntity;
-      takeCamera = map;
-      musicSelected = takeCamera!.music;
       _loadVideo();
-      
-
-      
     });
   }
 
+  @override
+  void didChangeDependencies() {
+   var map = ModalRoute.of(context)!.settings.arguments as PostContentEntity;
+      takeCamera = map;
+      musicSelected = takeCamera!.music;
+    super.didChangeDependencies();
+  }
   // Debounces the trim operation to avoid excessive processing.
   void _debounceTrim() {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
       _trimVideo();
     });
   }
@@ -168,7 +179,7 @@ class _VideoTrimmerPageState extends State<VideoTrimmerPage>
                     trimmer: _trimmer,
                     viewerHeight: 50.0,
                     viewerWidth: MediaQuery.of(context).size.width,
-                    maxVideoLength: takeCamera?.durationVideo??Duration.zero,
+                    maxVideoLength: takeCamera!.type =='content' ? Duration(seconds: 30) : Duration(seconds: 15),
                     onChangeStart: (value) => _startValue = value,
                     onChangeEnd: (value) {
                       _endValue = value;
@@ -222,7 +233,9 @@ class _VideoTrimmerPageState extends State<VideoTrimmerPage>
             onPressed: () => Navigator.pop(context),
           ),
           GestureDetector(
-            onTap: () {},
+            onTap: () {
+              _debounceTrim();
+            },
             child: Text(
               'Selesai',
               style: TextStyle(

@@ -81,6 +81,18 @@ class ApiService {
     }
   }
 
+  Future<StickerModel> getSticker() async {
+    try {
+      Response response = await dio
+          .get("/sticker", options: Options(
+            headers: {'Authorization': await HeadersToken.accessToken()}
+          ));
+      return StickerModel.fromJSON(response.data);
+    } catch (error, stacktrace) {
+      throw Exception("Exception occurred: $error stackTrace: $stacktrace");
+    }
+  }
+
   Future<ContentModel> getContent({int? page}) async {
     try {
       Response response = await dio
@@ -165,10 +177,6 @@ class ApiService {
         formData.files.addAll([
           MapEntry("thumbnail", await MultipartFile.fromFile(e, filename: e.split('/').last)),
         ]);
-      }
-      for (var e in formData.files) {
-        print(e.value);
-        print(e);
       }
       Response response = await dio.post('/content', data: formData, options: Options(
             headers: {'Authorization': await HeadersToken.accessToken()}

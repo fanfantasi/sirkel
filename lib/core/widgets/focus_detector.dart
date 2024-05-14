@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:screenshare/core/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// Fires callbacks every time the widget appears or disappears from the screen.

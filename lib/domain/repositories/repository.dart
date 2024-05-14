@@ -9,6 +9,7 @@ abstract class Repository {
   Future<ResultModel> liked({String? id, String? postId});
   Future<FollowModel> getFollow({String? name, int? page});
   Future<MusicModel> getMusic({String? params});
+  Future<StickerModel> getSticker();
   Future<VideoTokenModel> getVideoToken();
   Future<ResultModel> postContent({
     String? caption,

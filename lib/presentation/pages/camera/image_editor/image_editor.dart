@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +9,6 @@ import 'package:lindi_sticker_widget/lindi_controller.dart';
 import 'package:lindi_sticker_widget/lindi_sticker_widget.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshare/core/utils/constants.dart';
-import 'package:screenshare/core/utils/extentions.dart';
 import 'package:screenshare/core/widgets/loadingwidget.dart';
 import 'package:screenshare/domain/entities/music_entity.dart';
 import 'package:screenshare/domain/entities/post_content_entity.dart';
@@ -66,6 +66,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       var map = ModalRoute.of(context)!.settings.arguments as PostContentEntity;
+      // if (map != null)
       takeCamera = map;
       musicSelected = takeCamera!.music;
       isLoading.value = false;
@@ -188,22 +189,24 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
                 bottom: 18,
                 right: 18,
                 child: GestureDetector(
-                  onTap: ()async{
+                  onTap: () async {
                     isLoadingButton.value = true;
                     Uint8List? image = await controller.saveAsUint8List();
-                    
+
                     final tempDir = await getTemporaryDirectory();
-                    File file = await File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_image.png').create();
+                    File file = await File(
+                            '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_image.png')
+                        .create();
                     file.writeAsBytesSync(image!);
                     // print(file.path);
                     isLoadingButton.value = false;
                     if (!mounted) return;
                     Navigator.pushReplacementNamed(
-                      context, Routes.previewPicturePage,
-                      arguments: PostContentEntity(
-                          files: [file.path],
-                          music: musicSelected,
-                          type: takeCamera!.type));
+                        context, Routes.previewPicturePage,
+                        arguments: PostContentEntity(
+                            files: [file.path],
+                            music: musicSelected,
+                            type: takeCamera!.type));
                   },
                   child: Container(
                     height: kToolbarHeight * .7,
@@ -214,34 +217,35 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
                         border: Border.all(color: Colors.white, width: 2),
                         borderRadius: BorderRadius.circular(12)),
                     child: ValueListenableBuilder<bool>(
-                      valueListenable: isLoadingButton,
-                      builder: (context, value, child) {
-                        if (isLoadingButton.value){
-                          return LoadingWidget(leftcolor: Theme.of(context).primaryColor,);
-                        }
-                        return Center(
-                          child: Text(
-                            'Selesai',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              shadows: [
-                                Shadow(
-                                  offset: const Offset(.5, .5),
-                                  blurRadius: 1.0,
-                                  color: Colors.grey.withOpacity(.5),
-                                ),
-                                Shadow(
+                        valueListenable: isLoadingButton,
+                        builder: (context, value, child) {
+                          if (isLoadingButton.value) {
+                            return LoadingWidget(
+                              leftcolor: Theme.of(context).primaryColor,
+                            );
+                          }
+                          return Center(
+                            child: Text(
+                              'Selesai',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                shadows: [
+                                  Shadow(
                                     offset: const Offset(.5, .5),
                                     blurRadius: 1.0,
-                                    color: Colors.grey.withOpacity(.5)),
-                              ],
+                                    color: Colors.grey.withOpacity(.5),
+                                  ),
+                                  Shadow(
+                                      offset: const Offset(.5, .5),
+                                      blurRadius: 1.0,
+                                      color: Colors.grey.withOpacity(.5)),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      }
-                    ),
+                          );
+                        }),
                   ),
                 ),
               )
@@ -254,16 +258,14 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
 
   Widget imageEditor() {
     return LindiStickerWidget(
-        controller: controller,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(
-            File(takeCamera?.files?.first ?? ''),
-            width: double.infinity,
-            height: MediaQuery.of(context).size.height,
-            fit: BoxFit.cover,
-          ),
-        ));
+      controller: controller,
+      child: Image.file(
+        File(takeCamera?.files?.first ?? ''),
+        width: double.infinity,
+        height: MediaQuery.of(context).size.height,
+        fit: BoxFit.cover,
+      ),
+    );
   }
 
   Widget appBar() {
@@ -312,7 +314,19 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
                     if (res != null) {
                       if (res[0] == 'sticker') {
                         controller
-                            .addWidget(Image.asset("assets/images/${res[1]}"));
+                            .addWidget(
+                              CachedNetworkImage(
+                                imageUrl: res[1],
+                                placeholder: (context, url) => SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    color: Theme.of(context).primaryColor,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            );
                       } else if (res[0] == 'emoji') {
                         controller
                             .addWidget(Image.asset("assets/emojies/${res[1]}"));

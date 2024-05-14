@@ -8,6 +8,7 @@ import 'package:screenshare/core/utils/config.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/core/utils/headers.dart';
 import 'package:screenshare/core/utils/utils.dart';
+import 'package:screenshare/main.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/navigation/navigation_cubit.dart';
 import 'package:screenshare/presentation/pages/camera/camera_page.dart';
@@ -187,6 +188,7 @@ class _NavigationPageState extends State<NavigationPage> {
         home: tabs[pageindex],
         initialRoute: Routes.root,
         navigatorKey: navigatorKey,
+        navigatorObservers: [MyApp.routeObserver],
         onGenerateRoute: RouteGenerator.generateRoute,
         pageRoute: PageRoutes.materialPageRoute,
       ),
@@ -212,9 +214,10 @@ class _NavigationPageState extends State<NavigationPage> {
                 onTap: (index) async {
                   // print();
                   if (index == 2) {
-                    await availableCameras().then((value) =>
-                        Navigator.pushNamed(context, Routes.cameraPage,
-                            arguments: value));
+                    Navigator.pushNamed(context, Routes.uploadPage);
+                    // availableCameras().then((value) =>
+                    //     Navigator.pushNamed(context, Routes.cameraPage,
+                    //         arguments: value));
                   }
 
                   if (jumpToTop && index == 0 && !navigatorKey.currentState!.canPop()) {

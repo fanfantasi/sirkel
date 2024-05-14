@@ -17,6 +17,7 @@ import 'package:screenshare/presentation/pages/navigation/navigation_page.dart';
 import 'package:screenshare/presentation/pages/profile/profile_page.dart';
 import 'package:screenshare/presentation/pages/search/search_page.dart';
 import 'package:screenshare/presentation/pages/settings/setting_page.dart';
+import 'package:screenshare/presentation/pages/upload/upload.dart';
 
 
 class RouteGenerator {
@@ -76,6 +77,10 @@ class RouteGenerator {
       case Routes.searchPage:
         return MaterialPageRoute(
             builder: (_) => const SearchPage(), settings: settings);
+
+      case Routes.uploadPage:
+        return MaterialPageRoute(
+            builder: (_) => const UploadPage(), settings: settings);
 
       default:
         return errorRoute();

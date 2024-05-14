@@ -1,7 +1,5 @@
 import 'dart:async';
-
 import 'package:better_player/better_player.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,14 +12,13 @@ import 'package:screenshare/core/utils/utils.dart';
 import 'package:screenshare/core/widgets/custom_lottie_screen.dart';
 import 'package:screenshare/core/widgets/custom_player.dart';
 import 'package:screenshare/core/widgets/custom_readmore.dart';
-import 'package:screenshare/core/widgets/focus_detector.dart';
 import 'package:screenshare/core/widgets/loadingwidget.dart';
-import 'package:screenshare/core/widgets/smooth_video_progress_better.dart';
+import 'package:screenshare/core/widgets/smooth_video_progress.dart';
 import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:screenshare/domain/entities/result_entity.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
 import 'package:screenshare/presentation/pages/home/widgets/thumnail.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import 'marquee_music.dart';
 import 'user_profile.dart';
@@ -54,33 +51,37 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
   int playIndex = -1;
 
   Offset positionDxDy = const Offset(0, 0);
+  final ValueNotifier<bool> islandscape = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isPlaying = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isVisibility = ValueNotifier<bool>(true);
   final ValueNotifier<bool> isLiked = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isData = ValueNotifier<bool>(false);
   final ValueNotifier<String> isBuffering = ValueNotifier<String>('');
 
+    
+
   @override
   void initState() {
     data = widget.datas[widget.index];
     super.initState();
     isPlaying.value = false;
-    // print(_betterPlayerController.isVideoInitialized()??false);
+    getScaleFullScreen();
     BetterPlayerConfiguration betterPlayerConfiguration =
         BetterPlayerConfiguration(
-      fit: BoxFit.contain,
-      aspectRatio: Configs().aspectRatio(
-          data!.pic!.first.width ?? 0, data!.pic!.first.height ?? 0),
+      fit: BoxFit.cover,
+      aspectRatio: getScaleFullScreen(),
       handleLifecycle: true,
       looping: true,
       autoDispose: true,
       // autoPlay: true,
-      expandToFill: Configs().aspectRatio(
-                  data!.pic!.first.width ?? 0, data!.pic!.first.height ?? 0) >
-              1
-          ? true
-          : false,
+      // expandToFill: true,
+      // expandToFill: Configs().aspectRatio(
+      //             data!.pic!.first.width ?? 0, data!.pic!.first.height ?? 0) >
+      //         1
+      //     ? true
+      //     : false,
       showPlaceholderUntilPlay: true,
+      deviceOrientationsAfterFullScreen: [DeviceOrientation.portraitUp],
       controlsConfiguration: BetterPlayerControlsConfiguration(
         controlBarColor: Colors.transparent,
         controlsHideTime: const Duration(seconds: 1),
@@ -100,15 +101,31 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
   Future initializationPlayer() async {
     String path = '${Configs.baseUrlVid}${data!.pic!.first.file ?? ''}';
     if (mounted) {
-      BetterPlayerDataSource dataSource = BetterPlayerDataSource(
-          BetterPlayerDataSourceType.network, path,
-          placeholder: ThumbnailVideo(
-            data: data,
-            isPlay: widget.isPlay,
-          ),);
+      BetterPlayerDataSource dataSource = BetterPlayerDataSource.network(
+        path,
+        placeholder: ThumbnailVideo(
+          data: data,
+          isPlay: widget.isPlay,
+        ),
+        bufferingConfiguration: const BetterPlayerBufferingConfiguration(
+          minBufferMs: 1000,
+          maxBufferMs: 1000,
+          bufferForPlaybackMs: 1000,
+          bufferForPlaybackAfterRebufferMs: 1000,
+        ),
+        cacheConfiguration: BetterPlayerCacheConfiguration(
+          useCache: true,
+          preCacheSize: 1 * 1024 * 1024,
+          maxCacheSize: 20 * 1024 * 1024,
+          maxCacheFileSize: 100 * 1024 * 1024,
+
+          ///Android only option to use cached video between app sessions
+          key: "key_${data!.id.toString()}",
+        ),
+        qualities: {"480": path},
+      );
       await _betterPlayerController.setupDataSource(dataSource);
       _betterPlayerController.addEventsListener((event) {
-        // print(event.betterPlayerEventType);
         if (event.betterPlayerEventType ==
             BetterPlayerEventType.bufferingStart) {
           isBuffering.value = 'buffering';
@@ -118,17 +135,29 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
           isBuffering.value = '';
         }
       });
-      if (widget.isPlay) {
-        isPlaying.value = false;
-        _betterPlayerController.play();
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        if (widget.isPlay) {
+          isPlaying.value = false;
+          _betterPlayerController.play();
+          if (widget.positionVideo != null && _betterPlayerController.isVideoInitialized()!) {
+            _betterPlayerController.seekTo(widget.positionVideo! - const Duration(seconds: 1));
+          }
 
-        if (widget.positionVideo != null) {
-          _betterPlayerController
-              .seekTo(widget.positionVideo! - const Duration(seconds: 1));
+          Future.microtask(() => isPlaying.value = true);
         }
+      });
+    }
+  }
 
-        Future.microtask(() => isPlaying.value = true);
-      }
+  double getScaleFullScreen() {
+    double videoRatio = Configs()
+        .aspectRatio(data!.pic!.first.width ?? 0, data!.pic!.first.height ?? 0);
+    if (videoRatio > 1) {
+      islandscape.value = true;
+      return videoRatio * 1;
+    } else {
+      islandscape.value = false;
+      return videoRatio * .9;
     }
   }
 
@@ -146,14 +175,13 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
         }
       }
     }
-
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void dispose() {
     super.dispose();
-    // _betterPlayerController.dispose();
+    _betterPlayerController.dispose();
     isPlaying.value = false;
     debugPrint('didispose oke');
     Utilitas.jumpToTop = true;
@@ -202,7 +230,7 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
     if (videoRatio > 1) {
       return videoRatio * 0.5;
     } else {
-      return videoRatio / .5;
+      return videoRatio;
     }
   }
 
@@ -481,89 +509,105 @@ class _BetterPlayerWidgetState extends State<BetterPlayerWidget>
   Widget fullscreenPage() {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: SizedBox(
-        width: double.infinity,
-        height: double.maxFinite,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                _betterPlayerController.setControlsVisibility(true);
-                if (_betterPlayerController.isPlaying()!) {
-                  _betterPlayerController.pause();
-                } else {
-                  _betterPlayerController.play();
-                  _betterPlayerController.setControlsAlwaysVisible(false);
-                }
-              },
-              onLongPress: () {
-                timer =
-                    Timer.periodic(const Duration(milliseconds: 100), (timer) {
-                  if (_betterPlayerController.isPlaying()!) {
+      child: VisibilityDetector(
+        key: ObjectKey(data),
+        onVisibilityChanged: (visibility) {
+          if (visibility.visibleFraction == 1.0) {
+            if (_betterPlayerController.isVideoInitialized()!){
+              _betterPlayerController.play();
+            }
+          } else {
+            if (_betterPlayerController.isPlaying()!){
+              _betterPlayerController.pause();
+            }
+          }
+        },
+        child: LayoutBuilder(
+          builder: (context, size) => Stack(
+            alignment: Alignment.center,
+            children: [
+              AspectRatio(
+                aspectRatio: islandscape.value
+                  ? getScaleFullScreen()
+                  : Configs().aspectRatio(
+                      size.maxWidth.toInt(), size.maxHeight.toInt()),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    _betterPlayerController.setControlsVisibility(true);
+                    if (_betterPlayerController.isPlaying()!) {
                     _betterPlayerController.pause();
-                  }
-
-                  isVisibility.value = false;
-                });
-              },
-              onLongPressEnd: (details) {
-                timer!.cancel();
-                _betterPlayerController.play();
-                _betterPlayerController.setControlsAlwaysVisible(false);
-
-                isVisibility.value = true;
-              },
-              child: Transform.scale(
-                scale: getScale(),
-                child: BetterPlayer(controller: _betterPlayerController),
+                    } else {
+                    _betterPlayerController.play();
+                    _betterPlayerController.setControlsAlwaysVisible(false);
+                    }
+                  },
+                  onLongPress: () {
+                    timer =
+                        Timer.periodic(const Duration(milliseconds: 100), (timer) {
+                      if (_betterPlayerController.isPlaying()!) {
+                        _betterPlayerController.pause();
+                      }
+                    
+                      isVisibility.value = false;
+                    });
+                  },
+                  onLongPressEnd: (details) {
+                    timer!.cancel();
+                    _betterPlayerController.play();
+                    _betterPlayerController.setControlsAlwaysVisible(false);
+                    
+                    isVisibility.value = true;
+                  },
+                  child: BetterPlayer(controller: _betterPlayerController),
+                ),
               ),
-            ),
-            Positioned(
+              Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: ValueListenableBuilder(
-                    valueListenable: isPlaying,
-                    builder: (builder, value, child) {
-                      if (!value) {
-                        return LinearProgressIndicator(
-                          color: Colors.pink.shade900,
-                          backgroundColor: Colors.white.withOpacity(.3),
-                          borderRadius: BorderRadius.circular(8),
-                          minHeight: 3,
-                        );
-                      }
-                      return SmoothVideoProgressBetter(
-                        controller: _betterPlayerController,
-                        builder: (context, position, duration, child) => Theme(
-                          data: ThemeData.from(
-                            colorScheme: ColorScheme.fromSeed(
-                                seedColor: Theme.of(context).primaryColor),
-                          ),
-                          child: SliderTheme(
-                            data: SliderThemeData(
-                                trackHeight: 1.5,
-                                trackShape: CustomTrackShape(),
-                                thumbShape: SliderComponentShape.noThumb),
-                            child: Slider(
-                              onChangeStart: (_) =>
-                                  _betterPlayerController.pause(),
-                              onChangeEnd: (_) =>
-                                  _betterPlayerController.play(),
-                              onChanged: (value) =>
-                                  _betterPlayerController.seekTo(
-                                      Duration(milliseconds: value.toInt())),
-                              value: position.inMilliseconds.toDouble(),
-                              min: 0,
-                              max: duration.inMilliseconds.toDouble(),
-                            ),
+                  valueListenable: isPlaying,
+                  builder: (builder, value, child) {
+                    if (!value) {
+                      return LinearProgressIndicator(
+                        color: Colors.pink.shade900,
+                        backgroundColor: Colors.white.withOpacity(.3),
+                        borderRadius: BorderRadius.circular(8),
+                        minHeight: 3,
+                      );
+                    }
+                    return SmoothVideoProgress(
+                      // key: ObjectKey(_betterPlayerController.videoPlayerController),
+                      controller: _betterPlayerController,
+                      builder: (context, position, duration, child) => Theme(
+                        data: ThemeData.from(
+                          colorScheme: ColorScheme.fromSeed(
+                              seedColor: Theme.of(context).primaryColor),
+                        ),
+                        child: SliderTheme(
+                          data: SliderThemeData(
+                              trackHeight: 1.5,
+                              trackShape: CustomTrackShape(),
+                              thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 4.0)),
+                          child: Slider(
+                            onChangeStart: (_) => _betterPlayerController.pause(),
+                            onChangeEnd: (_) => _betterPlayerController.play(),
+                            onChanged: (value) => _betterPlayerController
+                                .seekTo(Duration(milliseconds: value.toInt())),
+                            value: position.inMilliseconds.toDouble(),
+                            min: 0,
+                            max: duration.inMilliseconds.toDouble(),
                           ),
                         ),
-                      );
-                    })),
-          ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

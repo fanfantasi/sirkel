@@ -48,6 +48,9 @@
     "or":"or",
     "in": "in",
 
+    "error":"An error occurred, please try again",
+    "tryagain":"Try Again",
+
     "name":"Full Name",
     "phone":"Phone Number",
 

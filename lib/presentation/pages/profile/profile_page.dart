@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:screenshare/core/utils/constants.dart';
 import 'package:screenshare/core/utils/headers.dart';
-import 'package:screenshare/presentation/pages/settings/setting_page.dart';
 
 import 'widgets/profile_widget.dart';
 

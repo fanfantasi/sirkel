@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:camera/camera.dart';
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
@@ -16,7 +15,6 @@ import 'package:screenshare/core/widgets/camera_countdown.dart';
 import 'package:screenshare/core/widgets/loadingwidget.dart';
 import 'package:screenshare/domain/entities/music_entity.dart';
 import 'package:screenshare/domain/entities/post_content_entity.dart';
-import 'package:screenshare/presentation/pages/gallery/widgets/image.dart';
 
 import 'widgets/music_widget.dart';
 
@@ -93,6 +91,7 @@ class _CameraPageState extends State<CameraPage> {
     Duration? durationVideo;
     Navigator.pushNamed(context, Routes.galleryPage, arguments: 4)
         .then((value) async {
+          
       List<AssetEntity> items = value as List<AssetEntity>;
       List<String> path = [];
       //
@@ -106,53 +105,60 @@ class _CameraPageState extends State<CameraPage> {
         }
 
         if (!mounted) return;
+
         if (thisVideo(path.first)){
+          
           if (durationVideo != null){
             if (postTypes[selectedTab]['typepost'] == 'story'){
               if (durationVideo! > const Duration(seconds: 10)){
-                Navigator.pushNamed(
+                Navigator.pushReplacementNamed(
                       context,
                       Routes.videoTrimmerPage,
                       arguments: PostContentEntity(
-                          files: imageResult,
+                          files: path,
                           music: musicSelected,
                           durationVideo: const Duration(seconds: 10),
                           type: postTypes[selectedTab]['typepost']),
                     );
+              }else{
+                debugPrint('Upload Story langsung dong');
               }
             }else if (postTypes[selectedTab]['typepost'] == 'content'){
               if (durationVideo! > const Duration(seconds: 30)){
-                Navigator.pushNamed(
+                Navigator.pushReplacementNamed(
                       context,
                       Routes.videoTrimmerPage,
                       arguments: PostContentEntity(
-                          files: imageResult,
+                          files: path,
                           music: musicSelected,
                           durationVideo: const Duration(seconds: 30),
                           type: postTypes[selectedTab]['typepost']),
                     );
+              }else{
+                Navigator.pushReplacementNamed(
+                  context,
+                  Routes.previewPicturePage,
+                  arguments: PostContentEntity(
+                      files: path,
+                      music: musicSelected,
+                      type: postTypes[selectedTab]['typepost']),
+                );
               }
             }
           }
         }else{
-          Navigator.pushNamed(
+          Navigator.pushReplacementNamed(
             context,
             Routes.imageEditorPage,
             arguments: PostContentEntity(
-                files: imageResult,
+                files: path,
                 music: musicSelected,
                 type: postTypes[selectedTab]['typepost']),
           );
-          // Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
-          //   arguments: PostContentEntity(
-          //       files: path,
-          //       music: musicSelected,
-          //       type: postTypes[selectedTab]['typepost']));
         }
         
       }
     });
-    // print(res);
   }
 
   @override
@@ -256,12 +262,6 @@ class _CameraPageState extends State<CameraPage> {
                         music: musicSelected,
                         type: postTypes[selectedTab]['typepost']),
                   );
-                  // Navigator.pushReplacementNamed(
-                  //     context, Routes.previewPicturePage,
-                  //     arguments: PostContentEntity(
-                  //         files: imageResult,
-                  //         music: musicSelected,
-                  //         type: postTypes[selectedTab]['typepost']));
                 },
                 multiple: (multiple) {
                   multiple.fileBySensor.forEach((key, value) {
@@ -280,14 +280,7 @@ class _CameraPageState extends State<CameraPage> {
                   imageResult.clear();
                   imageResult.add(single.file?.path ?? '');
                   if (!mounted) return;
-                  // Navigator.pushNamed(
-                  //   context,
-                  //   Routes.videoTrimmerPage,
-                  //   arguments: PostContentEntity(
-                  //       files: imageResult,
-                  //       music: musicSelected,
-                  //       type: postTypes[selectedTab]['typepost']),
-                  // );
+                  
                   Navigator.pushReplacementNamed(context, Routes.previewPicturePage,
                       arguments: PostContentEntity(files: imageResult, music: musicSelected, type: postTypes[selectedTab]['typepost']));
                 },
@@ -604,7 +597,7 @@ class _CameraPageState extends State<CameraPage> {
         stoppedPlaying: () {},
       );
     } else {
-      MyAudioService.instance.playagain(false);
+      MyAudioService.instance.resume(false);
     }
   }
 }

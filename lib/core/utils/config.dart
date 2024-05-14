@@ -14,18 +14,19 @@ enum CaptionType { normal, mention, hashtag, seeMore, seeLess }
 enum Proccess { pending, done, filed }
 
 class Configs {
+  static const uri = 'http://172.20.10.2';
   static const appName = 'Screen Share';
-  static const baseUrl = 'http://192.168.18.39:3100/v1';
-  static const baseUrlPic = 'http://192.168.18.39:3100/uploads/pictures/';
-  static const baseUrlVid = 'http://192.168.18.39:3100/uploads/videos/';
-  static const baseUrlAudio = 'http://192.168.18.39:3100/uploads/music/';
+  static const baseUrl = '$uri:3100/v1';
+  static const baseUrlPic = '$uri:3100/uploads/pictures/';
+  static const baseUrlVid = '$uri:3100/uploads/videos/';
+  static const baseUrlAudio = '$uri:3100/uploads/music/';
+  static const baseUrlSticker = '$uri:3100/uploads/sticker/';
   static const mapBox = 'pk.eyJ1IjoiaXJmYW5qdW5pb3IiLCJhIjoiY2t5c2N2dHM4MTJsdjJvcGVkbTNhbzRtbSJ9.VlgaQ_pgeQZEnUwuzK8Fow';
   static ScrollController scrollControllerHome = ScrollController();
   
   Future<bool> checkAutorization(BuildContext context) async {
     bool isLogin = false;
     await context.read<AuthCubit>().signOutGoogle().then((value) {
-      print(value);
       isLogin = !value;
       if (value){
           Navigator.pushNamedAndRemoveUntil(
@@ -64,7 +65,7 @@ class Configs {
     if (width == 0 && height == 0) {
       return 1.0;
     }
-    final double aspectRatio = width / height;
+    final double aspectRatio = width / height * 1;
     if (aspectRatio <= 0) {
       return 1.0;
     }

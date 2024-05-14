@@ -13,4 +13,9 @@ class Utilitas {
   static bool scrollDown = true;
   static Map currentUser = {};
   static bool jumpToTop = false;
+
+  static Future<String> getFileUrl(String fileName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    return "${directory.path}/$fileName";
+  }
 }

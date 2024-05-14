@@ -10,6 +10,7 @@ import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/content/post/post_content_cubit.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
 import 'package:screenshare/presentation/bloc/music/music_cubit.dart';
+import 'package:screenshare/presentation/bloc/sticker/sticker_cubit.dart';
 import 'package:screenshare/presentation/bloc/user/follow/follow_cubit.dart';
 import 'package:screenshare/presentation/bloc/user/user_cubit.dart';
 import 'package:screenshare/presentation/bloc/video/token/token_cubit.dart';
@@ -40,9 +41,12 @@ void main() async {
     child: const MyApp(),
   ));
 }
+GlobalKey<NavigatorState> mainNavigatorKey = GlobalKey<NavigatorState>();
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  static final RouteObserver<PageRoute> routeObserver =
+      RouteObserver<PageRoute>();
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -56,6 +60,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => di.getIt<LikedCubit>()),
           BlocProvider(create: (_) => di.getIt<FollowCubit>()),
           BlocProvider(create: (_) => di.getIt<MusicCubit>()),
+          BlocProvider(create: (_) => di.getIt<StickerCubit>()),
           BlocProvider(create: (_) => di.getIt<VideoTokenCubit>()),
           BlocProvider(create: (_) => di.getIt<PostContentCubit>()),
         ],
@@ -63,6 +68,7 @@ class MyApp extends StatelessWidget {
           builder: (context, themeState) {
             return MaterialApp(
               debugShowCheckedModeBanner: true,
+              navigatorKey: mainNavigatorKey,
               title: 'Sirkel',
               supportedLocales: context.supportedLocales,
               localizationsDelegates: context.localizationDelegates,

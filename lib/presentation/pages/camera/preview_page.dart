@@ -22,7 +22,6 @@ import 'package:screenshare/presentation/pages/camera/widgets/mentions_widget.da
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
-
 import 'widgets/music_widget.dart';
 import 'widgets/place_widget.dart';
 
@@ -67,28 +66,6 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
 
   @override
   void didChangeDependencies() {
-    if (takeCamera == null) {
-      var map = ModalRoute.of(context)!.settings.arguments as PostContentEntity;
-      takeCamera = map;
-      musicSelected = takeCamera!.music;
-
-      for (var e in takeCamera!.files!) {
-        if (e.split('.').last.toLowerCase().extentionfile() == 'video') {
-          videoPlayerController = VideoPlayerController.file(File(e))
-            ..initialize().then((_) {
-              chewieController = ChewieController(
-                videoPlayerController: videoPlayerController,
-                autoPlay: true,
-                looping: true,
-                showControls: false,
-                fullScreenByDefault: false,
-                allowFullScreen: false
-              );
-              setState(() {});
-            });
-        }
-      }
-    }
     super.didChangeDependencies();
   }
 
@@ -101,15 +78,37 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
     captionFocus.addListener(_onFocusChange);
     scrollController.addListener(_scrollListener);
     WidgetsBinding.instance.addPostFrameCallback((v) async {
-      if (chewieController != null &&
-          chewieController!.videoPlayerController.value.isInitialized) {
-        chewieController!.addListener(() {
-          var isFullScreen = chewieController!.isFullScreen;
-          if (isFullScreen) {
-            chewieController!.exitFullScreen();
+      if (takeCamera == null) {
+        var map =
+            ModalRoute.of(context)!.settings.arguments as PostContentEntity;
+        takeCamera = map;
+        musicSelected = takeCamera!.music;
+
+        for (var e in takeCamera!.files!) {
+          if (e.split('.').last.toLowerCase().extentionfile() == 'video') {
+            videoPlayerController = VideoPlayerController.file(File(e))
+              ..initialize().then((_) {
+                chewieController = ChewieController(
+                    videoPlayerController: videoPlayerController,
+                    autoPlay: true,
+                    looping: true,
+                    showControls: false,
+                    fullScreenByDefault: false,
+                    allowFullScreen: false);
+                setState(() {});
+              });
           }
-        });
+        }
       }
+      // if (chewieController != null &&
+      //     chewieController!.videoPlayerController.value.isInitialized) {
+      //   chewieController!.addListener(() {
+      //     var isFullScreen = chewieController!.isFullScreen;
+      //     if (isFullScreen) {
+      //       chewieController!.exitFullScreen();
+      //     }
+      //   });
+      // }
     });
 
     super.initState();
@@ -226,7 +225,7 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
       List<String> thumbnail = [];
       for (var e in takeCamera!.files!) {
         file.add(e);
-        if (e.split('.').last.toLowerCase().extentionfile() == 'video'){
+        if (e.split('.').last.toLowerCase().extentionfile() == 'video') {
           final fileName = await VideoThumbnail.thumbnailFile(
             video: e,
             thumbnailPath: (await getTemporaryDirectory()).path,
@@ -234,7 +233,7 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
             maxHeight: 920,
             quality: 75,
           );
-          thumbnail.add(fileName??'');
+          thumbnail.add(fileName ?? '');
         }
       }
       List<String> menstions = [];
@@ -613,7 +612,7 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
                           MyAudioService.instance.pause();
                         } else {
                           if (MyAudioService.instance.player.playing) {
-                            MyAudioService.instance.playagain(false);
+                            MyAudioService.instance.resume(false);
                           } else {
                             final String soundPath =
                                 '${Configs.baseUrlAudio}${musicSelected?.file ?? ''}';
@@ -691,7 +690,7 @@ class _PreviewPictureageState extends State<PreviewPictureage> {
         builder: (context) {
           return const PlaceWidget();
         });
-    MyAudioService.instance.playagain(false);
+    MyAudioService.instance.resume(false);
     if (res != null) {
       locationText = res;
       setState(() {});

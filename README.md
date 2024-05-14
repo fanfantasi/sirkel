@@ -1,6 +1,8 @@
-# screenshare
+# Sirkel
 
-A new Flutter project.
+<p align="center">
+<img src="https://raw.githubusercontent.com/jhomlala/betterplayer/master/media/logo.png">
+</p>
 
 ## Getting Started
 

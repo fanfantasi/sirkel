@@ -7,11 +7,13 @@ import 'package:screenshare/domain/usecases/follow/get_follow_usecase.dart';
 import 'package:screenshare/domain/usecases/liked/post_liked_usecase.dart';
 import 'package:screenshare/domain/usecases/music/get_music_usecase.dart';
 import 'package:screenshare/domain/usecases/content/get_content_usecase.dart';
+import 'package:screenshare/domain/usecases/sticker/get_sticker_usecase.dart';
 import 'package:screenshare/domain/usecases/user/get_user_usecase.dart';
 import 'package:screenshare/domain/usecases/video/token/get_token_usecase.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
 import 'package:screenshare/presentation/bloc/music/music_cubit.dart';
+import 'package:screenshare/presentation/bloc/sticker/sticker_cubit.dart';
 import 'package:screenshare/presentation/bloc/user/follow/follow_cubit.dart';
 import 'package:screenshare/presentation/bloc/user/user_cubit.dart';
 import 'package:screenshare/presentation/bloc/video/token/token_cubit.dart';
@@ -40,6 +42,7 @@ Future<void> init() async {
   getIt.registerFactory<LikedCubit>(() => LikedCubit(postLikedUseCase: getIt.call()));
   getIt.registerFactory<FollowCubit>(() => FollowCubit(getFollowUserUseCase: getIt.call()));
   getIt.registerFactory<MusicCubit>(() => MusicCubit(getMusicUseCase: getIt.call()));
+  getIt.registerFactory<StickerCubit>(() => StickerCubit(getStickerUseCase: getIt.call()));
   getIt.registerFactory<VideoTokenCubit>(() => VideoTokenCubit(getVideoTokenUseCase: getIt.call()));
   getIt.registerFactory<PostContentCubit>(() => PostContentCubit(postContentUseCase: getIt.call()));
       
@@ -52,6 +55,7 @@ Future<void> init() async {
   getIt.registerLazySingleton<PostLikedUseCase>(() => PostLikedUseCase(repository: getIt.call()));
   getIt.registerLazySingleton<GetFollowUserUseCase>(() => GetFollowUserUseCase(repository: getIt.call()));
   getIt.registerLazySingleton<GetMusicUseCase>(() => GetMusicUseCase(repository: getIt.call()));
+  getIt.registerLazySingleton<GetStickerUseCase>(() => GetStickerUseCase(repository: getIt.call()));
   getIt.registerLazySingleton<GetVideoTokenUseCase>(() => GetVideoTokenUseCase(repository: getIt.call()));
   getIt.registerLazySingleton<PostContentUseCase>(() => PostContentUseCase(repository: getIt.call()));
   getIt.registerLazySingleton<GetFindContentUseCase>(() => GetFindContentUseCase(repository: getIt.call()));

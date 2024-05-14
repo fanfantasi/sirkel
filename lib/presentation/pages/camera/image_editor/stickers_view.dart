@@ -1,8 +1,16 @@
+import 'dart:async';
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:screenshare/core/const/const.dart';
+import 'package:screenshare/core/utils/config.dart';
+import 'package:screenshare/core/utils/extentions.dart';
+import 'package:screenshare/domain/entities/sticker_entity.dart';
+import 'package:screenshare/presentation/bloc/sticker/sticker_cubit.dart';
+import 'package:shimmer/shimmer.dart';
 
 class StickersWidget extends StatefulWidget {
   const StickersWidget({super.key});
@@ -13,6 +21,41 @@ class StickersWidget extends StatefulWidget {
 
 class _StickersWidgetState extends State<StickersWidget> {
   bool isEmoji = false;
+  late StreamSubscription<StickerState> stickerStream;
+  late List<ResultStickerEntity> stickers = <ResultStickerEntity>[];
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      getSticker();
+    });
+    super.initState();
+  }
+
+  Future<void> getSticker() async {
+    stickers.clear();
+
+    context.read<StickerCubit>().getSticker();
+    if (!mounted) return;
+
+    stickerStream = context.read<StickerCubit>().stream.listen((event) {
+      if (event is StickerLoaded) {
+        for (var e in event.sticker.data ?? []) {
+          if (stickers.where((f) => f.id == e.id).isEmpty) {
+            stickers.add(e);
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    stickerStream.cancel();
+    stickers.clear();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -138,9 +181,6 @@ class _StickersWidgetState extends State<StickersWidget> {
                     ],
                   ),
                 ),
-                const SizedBox(
-                  height: 20,
-                ),
                 Text(
                   isEmoji == true ? "Emojis" : "Cuppy",
                   style: const TextStyle(
@@ -148,28 +188,45 @@ class _StickersWidgetState extends State<StickersWidget> {
                       fontWeight: FontWeight.w600,
                       color: Colors.grey),
                 ),
-                const SizedBox(height: 20),
                 if (isEmoji == false)
                   Expanded(
-                    child: GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              mainAxisSpacing: 20,
-                              crossAxisSpacing: 20,
-                              childAspectRatio: 1.2),
-                      physics: const ScrollPhysics(),
-                      itemCount: Consts.stickers.length,
-                      itemBuilder: (context, index) {
-                        final String sticker = Consts.stickers[index];
-    
-                        return GestureDetector(
-                          onTap: () {
-                            // widget
-                            //     .onStickerClickListener("assets/images/$sticker");
-                            Navigator.pop(context, ['sticker', sticker]);
+                    child: BlocBuilder<StickerCubit, StickerState>(
+                      builder: (context, state) {
+                        if (state is StickerLoading) {
+                          return loadingStream();
+                        }
+                        return GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 4,
+                                  mainAxisSpacing: 20,
+                                  crossAxisSpacing: 20,
+                                  childAspectRatio: 1.2),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: stickers.length,
+                          itemBuilder: (context, index) {
+                            final String sticker =
+                                Configs.baseUrlSticker + stickers[index].image!;
+
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context, ['sticker', sticker]);
+                              },
+                              child: CachedNetworkImage(
+                                imageUrl: sticker,
+                                memCacheWidth: 35.cacheSize(context),
+                                memCacheHeight: 35.cacheSize(context),
+                                placeholder: (context, url) => SizedBox(
+                                  height: 12,
+                                  width: 12,
+                                  child: CircularProgressIndicator(
+                                    color: Theme.of(context).primaryColor,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                            );
                           },
-                          child: Image.asset("assets/images/$sticker"),
                         );
                       },
                     ),
@@ -183,11 +240,11 @@ class _StickersWidgetState extends State<StickersWidget> {
                               mainAxisSpacing: 20,
                               crossAxisSpacing: 20,
                               childAspectRatio: 1.2),
-                      physics: const ScrollPhysics(),
+                      physics: const BouncingScrollPhysics(),
                       itemCount: Consts.emojies.length,
                       itemBuilder: (context, index) {
                         final String emoji = Consts.emojies[index];
-    
+
                         return GestureDetector(
                           onTap: () {
                             // widget
@@ -204,6 +261,33 @@ class _StickersWidgetState extends State<StickersWidget> {
           )
         ],
       ),
+    );
+  }
+
+  Widget loadingStream() {
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          mainAxisSpacing: 20,
+          crossAxisSpacing: 20,
+          childAspectRatio: 1.2),
+      physics: const BouncingScrollPhysics(),
+      itemCount: 24,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.black45,
+          highlightColor: Colors.white,
+          child: Container(
+            height: 35,
+            width: 35,
+            decoration: BoxDecoration(
+              color: Colors.black12,
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:expandable_text/expandable_text.dart';
 import 'package:flutter/material.dart';
@@ -15,11 +16,11 @@ import 'package:screenshare/domain/entities/content_entity.dart';
 import 'package:screenshare/domain/entities/result_entity.dart';
 import 'package:screenshare/presentation/bloc/content/content_cubit.dart';
 import 'package:screenshare/presentation/bloc/liked/liked_cubit.dart';
-import 'package:screenshare/presentation/pages/home/widgets/appbar_reels.dart';
-import 'package:screenshare/presentation/pages/home/widgets/marquee_music.dart';
 import 'package:screenshare/presentation/pages/home/widgets/video_player_better.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'widgets/appbar_reels.dart';
+import 'widgets/marquee_music.dart';
 import 'widgets/picture_player.dart';
 import 'widgets/user_profile.dart';
 
@@ -33,33 +34,27 @@ class FullscreenPage extends StatefulWidget {
 class _FullscreenPageState extends State<FullscreenPage> {
   PageController controller = PageController();
   PageController controllerPic = PageController();
-
-  final ValueNotifier<int> selectedIndex = ValueNotifier<int>(0);
-  final ValueNotifier<bool> isLiked = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> isData = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> isHideScroll = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> isHide = ValueNotifier<bool>(false);
-
   List<ResultContentEntity> datas = [];
-  bool isPlaying = false;
-  int currentIndex = -1;
-  bool titleShow = true;
-  Duration? position;
-  bool expanded = false;
-  int lastPage = 0;
-  bool hideMusic = false;
+  final ValueNotifier<int> selectedIndex = ValueNotifier<int>(0);
+  final ValueNotifier<bool> isHideScroll = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isData = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isLiked = ValueNotifier<bool>(false);
 
+  bool expanded = false;
+
+  bool hideMusic = false;
   bool scrollUp = false;
   bool scrollDown = true;
+  int lastPage = 0;
 
   Timer? timer;
   Offset positionDxDy = const Offset(0, 0);
-
+  Duration? position;
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      isHide.value = false;
       controller.addListener(() async {
         if (controller.position.userScrollDirection ==
             ScrollDirection.forward) {
@@ -122,29 +117,12 @@ class _FullscreenPageState extends State<FullscreenPage> {
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    if (datas.isEmpty) {
-      var map = ModalRoute.of(context)!.settings.arguments as List;
-      selectedIndex.value = map[0];
-      currentIndex = selectedIndex.value;
-      datas = map[1];
-      lastPage = datas.length;
-      position = map[2] ?? Duration.zero;
-      controller = PageController(initialPage: selectedIndex.value);
-      hideMusic =
-          !thisVideo(datas[selectedIndex.value].pic!.first.file ?? '') &&
-              datas[currentIndex].music == null;
-    }
-
-    super.didChangeDependencies();
-  }
-
   void likeAddTapScreen(ResultContentEntity selectedData) async {
     ResultEntity? result;
+    isData.value = false;
     if (selectedData.likedId == null) {
       result = await context.read<LikedCubit>().liked(postId: selectedData.id);
-      isData.value = datas[selectedIndex.value].liked ?? true;
+      isData.value = true;
       if (result != null) {
         datas[selectedIndex.value].liked = true;
         datas[selectedIndex.value].likedId = result.returned ?? '';
@@ -155,10 +133,19 @@ class _FullscreenPageState extends State<FullscreenPage> {
   }
 
   @override
-  void dispose() {
-    controller.dispose();
-    controllerPic.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    if (datas.isEmpty) {
+      var map = ModalRoute.of(context)!.settings.arguments as List;
+      selectedIndex.value = map[0];
+      datas = map[1];
+      position = map[2];
+      controller = PageController(initialPage: selectedIndex.value);
+      hideMusic =
+          !thisVideo(datas[selectedIndex.value].pic!.first.file ?? '') &&
+              datas[selectedIndex.value].music == null;
+    }
+
+    super.didChangeDependencies();
   }
 
   @override
@@ -166,7 +153,6 @@ class _FullscreenPageState extends State<FullscreenPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
-        alignment: Alignment.center,
         children: [
           Positioned.fill(
             child: PageView.builder(
@@ -176,9 +162,8 @@ class _FullscreenPageState extends State<FullscreenPage> {
               scrollDirection: Axis.vertical,
               padEnds: false,
               onPageChanged: (value) {
-                currentIndex = value;
                 selectedIndex.value = value;
-                isHide.value = !isData.value;
+                position = null;
                 hideMusic = !(datas[value]
                         .pic!
                         .where((e) =>
@@ -228,7 +213,6 @@ class _FullscreenPageState extends State<FullscreenPage> {
               },
             ),
           ),
-
           //Top ====================
           if (selectedIndex.value < datas.length)
             Positioned(
@@ -238,12 +222,13 @@ class _FullscreenPageState extends State<FullscreenPage> {
                 valueListenable: isHideScroll,
                 builder: (context, value, child) {
                   return AnimatedOpacity(
-                      opacity: value ? 0 : 1,
-                      duration: const Duration(seconds: 2),
-                      child: AppBarReels(
-                          isVideo: thisVideo(
-                              datas[selectedIndex.value].pic!.first.file ??
-                                  '')));
+                    opacity: value ? 0 : 1,
+                    duration: const Duration(seconds: 2),
+                    child: AppBarReels(
+                      isVideo: thisVideo(
+                          datas[selectedIndex.value].pic!.first.file ?? ''),
+                    ),
+                  );
                 },
               ),
             ),
@@ -263,8 +248,10 @@ class _FullscreenPageState extends State<FullscreenPage> {
                 ),
               ),
             ),
+
           //Bottom ===============
-          if (selectedIndex.value < datas.length)
+          if (selectedIndex.value < datas.length &&
+              datas[selectedIndex.value].music != null)
             Positioned(
               right: -32,
               bottom: -10,
@@ -276,9 +263,10 @@ class _FullscreenPageState extends State<FullscreenPage> {
                 ),
               ),
             ),
+
           if (selectedIndex.value < datas.length)
             Positioned(
-              bottom: 8,
+              bottom: 16,
               left: 18,
               right: 16,
               child: Column(
@@ -293,13 +281,6 @@ class _FullscreenPageState extends State<FullscreenPage> {
                       rightContent()
                     ],
                   ),
-                  Visibility(
-                    visible: !hideMusic,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: isMusic(),
-                    ),
-                  )
                 ],
               ),
             ),
@@ -336,56 +317,27 @@ class _FullscreenPageState extends State<FullscreenPage> {
             key: Key(datas[index].id.toString()),
             datas: datas,
             index: index,
+            isPlay: true,
             isFullScreen: true,
             positionVideo: position,
-            isPlay: true
           )
-        // ? Container()
         : PicturePlayerWidget(
+            key: Key(datas[index].id.toString()),
             datas: datas,
             index: index,
             isFullScreen: true,
-            positionAudio: position,
+            play: true,
+            positionAudio: position ?? Duration.zero,
           );
   }
 
   Widget isMusic() {
-    return Row(
-      children: [
-        MarqueeMusic(
-          isVideo: true,
-          isFullScreen: true,
-          title: (datas[selectedIndex.value].music != null)
-              ? datas[selectedIndex.value].music!.name
-              : 'suara asli ${datas[selectedIndex.value].author?.username ?? ''}  - ',
-        ),
-        Container(
-          margin: const EdgeInsets.only(left: 18),
-          height: 32,
-          width: 32,
-          child: CircleImageAnimation(
-            child: (datas[selectedIndex.value].music != null)
-                ? SvgPicture.asset(
-                    'assets/svg/disc.svg',
-                    // height: 28,
-                  )
-                : CircleAvatar(
-                    radius: 12,
-                    backgroundColor: Theme.of(context).colorScheme.onPrimary,
-                    child: ClipOval(
-                        child: CachedNetworkImage(
-                      imageUrl: datas[selectedIndex.value].author?.avatar ?? '',
-                      placeholder: (context, url) {
-                        return const LoadingWidget();
-                      },
-                      errorWidget: (context, url, error) {
-                        return Image.asset('assets/icons/ic-account-user.png');
-                      },
-                    )),
-                  ),
-          ),
-        ),
-      ],
+    return MarqueeMusic(
+      isVideo: true,
+      isFullScreen: true,
+      title: (datas[selectedIndex.value].music != null)
+          ? datas[selectedIndex.value].music!.name
+          : 'suara asli ${datas[selectedIndex.value].author?.username ?? ''}  - ',
     );
   }
 
@@ -425,6 +377,13 @@ class _FullscreenPageState extends State<FullscreenPage> {
                 },
               ),
             ),
+            Visibility(
+              visible: !hideMusic,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8.0),
+                child: isMusic(),
+              ),
+            )
         ],
       ),
     );
@@ -530,6 +489,33 @@ class _FullscreenPageState extends State<FullscreenPage> {
         ),
         const SizedBox(
           height: 8,
+        ),
+        SizedBox(
+          height: 32,
+          width: 32,
+          child: CircleImageAnimation(
+            child: (datas[selectedIndex.value].music != null)
+                ? SvgPicture.asset(
+                    'assets/svg/disc.svg',
+                  )
+                : CircleAvatar(
+                    radius: 12,
+                    backgroundColor: Theme.of(context).colorScheme.onPrimary,
+                    child: ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl:
+                            datas[selectedIndex.value].author?.avatar ?? '',
+                        placeholder: (context, url) {
+                          return const LoadingWidget();
+                        },
+                        errorWidget: (context, url, error) {
+                          return Image.asset(
+                              'assets/icons/ic-account-user.png');
+                        },
+                      ),
+                    ),
+                  ),
+          ),
         ),
       ],
     );

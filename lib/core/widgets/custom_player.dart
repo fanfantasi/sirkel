@@ -1,8 +1,5 @@
 import 'package:better_player/better_player.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:screenshare/core/utils/config.dart';
-import 'package:screenshare/core/widgets/loadingwidget.dart';
 import 'package:screenshare/domain/entities/content_entity.dart';
 
 
@@ -17,6 +14,7 @@ class CustomPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      // onTap: () => controller.toggleFullScreen(),
       child: StreamBuilder(
         initialData: false,
         stream: controller.controlsVisibilityStream,

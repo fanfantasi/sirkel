@@ -47,11 +47,13 @@ class CountContentEntity {
 
 class ResultFileEntity {
   final String? file;
-  final int? height;
-  final int? width;
+  int? height;
+  int? width;
+  Duration? lastPosition;
+  bool? wasPlaying;
   final String? type;
   final String? thumbnail;
-  const ResultFileEntity({this.file, this.height, this.width, this.type, this.thumbnail});
+  ResultFileEntity({this.file, this.height, this.width, this.lastPosition, this.wasPlaying, this.type, this.thumbnail});
 }
 class ResultMusicEntity {
   final String? cover;

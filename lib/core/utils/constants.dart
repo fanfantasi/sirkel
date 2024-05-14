@@ -24,5 +24,7 @@ class Routes {
 
   static const galleryPage = '/gallery-page';
   static const searchPage = '/search-page';
+  
+  static const uploadPage = '/upload-page';
 
 }
