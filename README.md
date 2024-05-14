@@ -5,7 +5,7 @@
 </p>
 
 ### Android
-<video src="https://github.com/fanfantasi/sirkel/raw/Master/video/android.mov"></video>
+<video src="[https://github.com/fanfantasi/sirkel/raw/Master/video/android.mov](https://github.com/fanfantasi/sirkel/blob/Master/video/android.mov)"></video>
 
 ## Getting Started
 
