@@ -1,7 +1,7 @@
 # Sirkel
 
 <p align="center">
-<img src="[https://raw.githubusercontent.com/fanfantasi/sirkel/Master/assets/svg/sirkel.svg?token=GHSAT0AAAAAACLZAAFYMI3TICPKPKBJPMDCZSDV6AQ](https://raw.githubusercontent.com/fanfantasi/sirkel/Master/assets/svg/sirkel.svg?token=GHSAT0AAAAAACLZAAFZTZWZVI4S6QFDLOH4ZSDWJJQ)">
+<img src="https://raw.githubusercontent.com/fanfantasi/sirkel/Master/assets/svg/sirkel.svg?token=GHSAT0AAAAAACLZAAFZTZWZVI4S6QFDLOH4ZSDWJJQ">
 </p>
 
 ### Android
