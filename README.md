@@ -1,7 +1,7 @@
 # Sirkel
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/fanfantasi/sirkel/Master/assets/svg/sirkel.svg?token=GHSAT0AAAAAACLZAAFZTZWZVI4S6QFDLOH4ZSDWJJQ">
+<img src="https://github.com/fanfantasi/sirkel/blob/Master/assets/svg/sirkel.svg">
 </p>
 
 This project Media Sosial With Flutter
